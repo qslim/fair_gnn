@@ -246,21 +246,3 @@ class SpecformerMedium(nn.Module):
         return mask1d, mask2d
 
 
-    '''
-    def length_to_mask(self, length):
-        '''
-        length: [B]
-        return: [B, max_len].
-        '''
-        B = len(length)
-        N = length.max().item()
-        mask1d  = torch.arange(N, device=length.device).expand(B, N) >= length.unsqueeze(1)
-
-        mask2d = torch.zeros(B, N, N, device=length.device)
-        for i in range(B):
-            mask2d[i, :length[i], :length[i]] = 1.0
-
-        # mask1d for key_padding_mask, a True value indicates that the corresponding key value will be ignored for the purpose of attention
-        # mask2d for edge selection from padding
-        return mask1d, mask2d.bool()
-    '''

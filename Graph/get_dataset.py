@@ -1,6 +1,4 @@
-from dataclass import *
 from dgldataclass import DglGraphPropPredDataset, DglPCQM4Mv2Dataset, DglZincDataset
-from pygdataclass import PygGraphPropPredDataset
 import dgl
 from dgl.data.utils import load_graphs, save_graphs, Subset
 import torch
@@ -249,19 +247,6 @@ def get_dataset(dataset_name='abaaba'):
             'metric': 'ap',
             'metric_mode': 'max',
             'evaluator': Evaluator('ogbg-molpcba'),
-            'train_dataset': dataset[split_idx['train']],
-            'valid_dataset': dataset[split_idx['valid']],
-            'test_dataset':  dataset[split_idx['test']],
-        }
-    elif dataset_name == 'ppa':
-        dataset = PygGraphPropPredDataset(name = 'ogbg-ppa')
-        split_idx = dataset.get_idx_split()
-        data_info = {
-            'num_class': 37,
-            'loss_fn':  F.cross_entropy,
-            'metric': 'acc',
-            'metric_mode': 'max',
-            'evaluator': Evaluator('ogbg-ppa'),
             'train_dataset': dataset[split_idx['train']],
             'valid_dataset': dataset[split_idx['valid']],
             'test_dataset':  dataset[split_idx['test']],

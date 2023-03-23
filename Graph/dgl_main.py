@@ -14,12 +14,14 @@ from torch.optim.lr_scheduler import LambdaLR
 import json5
 from easydict import EasyDict
 
-from ema_pytorch import EMA
 from zinc_model import SpecformerZINC
 from large_model import SpecformerLarge
 from medium_model import SpecformerMedium
 from small_model import SpecformerSmall
 from get_dataset import DynamicBatchSampler, RandomSampler, collate_pad, collate_dgl, get_dataset
+
+
+torch.set_num_threads(1)
 
 
 def init_params(module):
@@ -190,7 +192,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--cuda', type=int, default=0)
-    parser.add_argument('--dataset', default='zinc')
+    parser.add_argument('--dataset', default='pcqm')
 
     args = parser.parse_args()
     args.project_name = datetime.datetime.now().strftime('%m-%d-%X')
