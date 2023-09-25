@@ -285,5 +285,5 @@ if __name__ == '__main__':
     #generate_node_data('chameleon')
     #generate_node_data('squirrel')
     #generate_node_data('actor')
-    generate_node_data('penn')
+    generate_node_data('cora')
 
