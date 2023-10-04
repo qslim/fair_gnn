@@ -105,6 +105,7 @@ class Specformer(nn.Module):
         self.ffn_dropout = nn.Dropout(tran_dropout)
         self.mha = nn.MultiheadAttention(hidden_dim, nheads, tran_dropout)
         self.ffn = FeedForwardNetwork(hidden_dim, hidden_dim, nclass)
+        #self.ffn = FeedForwardNetwork(hidden_dim, hidden_dim, hidden_dim)
 
         self.feat_dp1 = nn.Dropout(feat_dropout)
         self.feat_dp2 = nn.Dropout(feat_dropout)

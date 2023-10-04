@@ -141,4 +141,4 @@ pokec_n:
     tran_dropout: 0.5
     feat_dropout: 0.5
     prop_dropout: 0.5
-    norm: 'batch'
+    norm: 'layer'

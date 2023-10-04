@@ -56,7 +56,7 @@ def main_worker(args, config, method):
     #             y = y.view(-1)
 
 
-    e, u, x, y, sens = torch.load('data/pokec_z.pt')
+    e, u, x, y, sens = torch.load('data/pokec_z_LM_3000_F.pt')
     e, u, x, y, sens = e, u, x, y, sens
     features, labels, idx_train, idx_val, idx_test, sens = torch.load('data/region_job_information.pt')
     # print(y)
@@ -198,7 +198,7 @@ def main_worker(args, config, method):
                 ['%.2f' % i for i in max_acc3] + ['%.2f' % i for i in max_acc4] + ['%.2f' % i for i in
                                                                                    max_acc5]])  # 将数据放进表格
             # result = pd.DataFrame(data=[['%.2f' % i for i in max_acc3]])
-            result.to_csv('IndEx_pokec_z_T.csv', mode='a', header=False)  # 数据存入csv,存储位置及文件名称
+            result.to_csv('IndEx_pokec_z_3000_F.csv', mode='a', header=False)  # 数据存入csv,存储位置及文件名称
             # return logits, y
             break
 
@@ -261,7 +261,7 @@ if __name__ == '__main__':
         config = yaml.load(open('config.yaml'), Loader=yaml.SafeLoader)['signal']
     else:
         config = yaml.load(open('config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
-    for i in range(100):  # 改轮数
+    for i in range(3):  # 改轮数
         seed_everything(i)
         main_worker(args, config, method)
         #record_list = main_worker(args, config, method)
