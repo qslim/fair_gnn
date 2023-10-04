@@ -187,28 +187,28 @@ def load_credit(dataset, sens_attr="Age", predict_attr="NoDefaultNextMonth", pat
     #    idx_features_labels['TotalMonthsOverdue'] = (idx_features_labels['TotalMonthsOverdue']-idx_features_labels['TotalMonthsOverdue'].mean())/idx_features_labels['TotalMonthsOverdue'].std()
     '''
     # build relationship
-    if os.path.exists(f'{path}/{dataset}_edges.txt'):  # os.path.exists判断文件是否存在,f让大括号部分，用里面的内容取代
-        edges_unordered = np.genfromtxt(f'{path}/{dataset}_edges.txt').astype(
-            'int')  # np.genfromtxt读txt的方法，astype表示读成数字
-    else:
-        edges_unordered = build_relationship(idx_features_labels[header], thresh=0.7)  # 用build的方式生成的数组存储进edge
-        np.savetxt(f'{path}/{dataset}_edges.txt', edges_unordered)  # 将数据存进文件
+    # if os.path.exists(f'{path}/{dataset}_edges.txt'):  # os.path.exists判断文件是否存在,f让大括号部分，用里面的内容取代
+    #     edges_unordered = np.genfromtxt(f'{path}/{dataset}_edges.txt').astype(
+    #         'int')  # np.genfromtxt读txt的方法，astype表示读成数字
+    # else:
+    #     edges_unordered = build_relationship(idx_features_labels[header], thresh=0.7)  # 用build的方式生成的数组存储进edge
+    #     np.savetxt(f'{path}/{dataset}_edges.txt', edges_unordered)  # 将数据存进文件
 
     features = spp.csr_matrix(idx_features_labels[header],
                               dtype=np.float32)  # sp.csr_matrix压缩稀疏矩阵（https://www.runoob.com/scipy/scipy-sparse-matrix.html）
     labels = idx_features_labels[predict_attr].values  # 存下predict_attr的数值
     idx = np.arange(features.shape[0])  # 0到features：{0，1，2，...，features.shape[0]-1}
     idx_map = {j: i for i, j in enumerate(idx)}  # {0:0, 1:1, 2:2, ... , feature.shape[0]-1:feature.shape[0]-1}
-    edges = np.array(list(map(idx_map.get, edges_unordered.flatten())),
-                     # flatten()拉成一维数组，map把第二个的变量添加到第一个里面去，list(map())将edge_unordered.flatten()的值作为key，依次返回对应的value
-                     dtype=int).reshape(edges_unordered.shape)  # 将数据拆分成edges_unordered大小的行数的矩阵
-    adj = coo_matrix((np.ones(edges.shape[0]), (edges[:, 0], edges[:, 1])),
-                     shape=(labels.shape[0], labels.shape[0]),
-                     dtype=np.float32)  # 视sp.coo_matrix生成稀疏矩阵（与csr_matrix相反）
-
-    # build symmetric adjacency matrix
-    adj = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)  # 相似矩阵
-    adj = adj + spp.eye(adj.shape[0])  # sp.eye对角线上位1的矩阵
+    # edges = np.array(list(map(idx_map.get, edges_unordered.flatten())),
+    #                  # flatten()拉成一维数组，map把第二个的变量添加到第一个里面去，list(map())将edge_unordered.flatten()的值作为key，依次返回对应的value
+    #                  dtype=int).reshape(edges_unordered.shape)  # 将数据拆分成edges_unordered大小的行数的矩阵
+    # adj = coo_matrix((np.ones(edges.shape[0]), (edges[:, 0], edges[:, 1])),
+    #                  shape=(labels.shape[0], labels.shape[0]),
+    #                  dtype=np.float32)  # 视sp.coo_matrix生成稀疏矩阵（与csr_matrix相反）
+    #
+    # # build symmetric adjacency matrix
+    # adj = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)  # 相似矩阵
+    # adj = adj + spp.eye(adj.shape[0])  # sp.eye对角线上位1的矩阵
 
     features = torch.FloatTensor(np.array(features.todense()))  # 将numpy转换为tensor（32位浮点类型数据）
     labels = torch.LongTensor(labels)  # 将数据转化为64位整形
@@ -241,7 +241,7 @@ def load_credit(dataset, sens_attr="Age", predict_attr="NoDefaultNextMonth", pat
     idx_test = torch.LongTensor(idx_test)
 
     torch.save([features, labels, idx_train, idx_val, idx_test, sens], 'data/{}_information.pt'.format(dataset))
-    return adj, features, labels, idx_train, idx_val, idx_test, sens
+    return None, features, labels, idx_train, idx_val, idx_test, sens
 
 
 def build_relationship(x, thresh=0.25):
