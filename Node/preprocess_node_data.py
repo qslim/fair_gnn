@@ -13,6 +13,7 @@ import torch
 from sklearn.preprocessing import label_binarize
 from ogb.nodeproppred.dataset_dgl import DglNodePropPredDataset
 from numpy.linalg import eig, eigh
+from numpy import int64
 
 
 def generate_signal_data():
@@ -30,11 +31,11 @@ def generate_signal_data():
 
     e, u = eigh(L)
 
-    y_low  = u @ np.diag(np.array([math.exp(-10*(ee-0)**2) for ee in e])) @ u.T @ x
-    y_high = u @ np.diag(np.array([1 - math.exp(-10*(ee-0)**2) for ee in e])) @ u.T @ x
-    y_band = u @ np.diag(np.array([math.exp(-10*(ee-1)**2) for ee in e])) @ u.T @ x
-    y_rej  = u @ np.diag(np.array([1 - math.exp(-10*(ee-1)**2) for ee in e])) @ u.T @ x
-    y_comb = u @ np.diag(np.array([abs(np.sin(ee*math.pi)) for ee in e])) @ u.T @ x
+    y_low = u @ np.diag(np.array([math.exp(-10 * (ee - 0) ** 2) for ee in e])) @ u.T @ x
+    y_high = u @ np.diag(np.array([1 - math.exp(-10 * (ee - 0) ** 2) for ee in e])) @ u.T @ x
+    y_band = u @ np.diag(np.array([math.exp(-10 * (ee - 1) ** 2) for ee in e])) @ u.T @ x
+    y_rej = u @ np.diag(np.array([1 - math.exp(-10 * (ee - 1) ** 2) for ee in e])) @ u.T @ x
+    y_comb = u @ np.diag(np.array([abs(np.sin(ee * math.pi)) for ee in e])) @ u.T @ x
 
     e = torch.FloatTensor(e)
     u = torch.FloatTensor(u)
@@ -46,10 +47,10 @@ def generate_signal_data():
     y_rej = torch.FloatTensor(y_rej)
     y_comb = torch.FloatTensor(y_comb)
 
-    torch.save([e, u, x, y_low, m],  'data/signal_low.pt')
+    torch.save([e, u, x, y_low, m], 'data/signal_low.pt')
     torch.save([e, u, x, y_high, m], 'data/signal_high.pt')
     torch.save([e, u, x, y_band, m], 'data/signal_band.pt')
-    torch.save([e, u, x, y_rej, m],  'data/signal_rej.pt')
+    torch.save([e, u, x, y_rej, m], 'data/signal_rej.pt')
     torch.save([e, u, x, y_comb, m], 'data/signal_comb.pt')
 
 
@@ -105,12 +106,12 @@ def load_data(dataset_str):
     if dataset_str == 'citeseer':
         # Fix citeseer dataset (there are some isolated nodes in the graph)
         # Find isolated nodes, add them as zero-vecs into the right position
-        test_idx_range_full = range(min(test_idx_reorder), max(test_idx_reorder)+1)
+        test_idx_range_full = range(min(test_idx_reorder), max(test_idx_reorder) + 1)
         tx_extended = sp.sparse.lil_matrix((len(test_idx_range_full), x.shape[1]))
-        tx_extended[test_idx_range-min(test_idx_range), :] = tx
+        tx_extended[test_idx_range - min(test_idx_range), :] = tx
         tx = tx_extended
         ty_extended = np.zeros((len(test_idx_range_full), y.shape[1]))
-        ty_extended[test_idx_range-min(test_idx_range), :] = ty
+        ty_extended[test_idx_range - min(test_idx_range), :] = ty
         ty = ty_extended
 
     features = sp.sparse.vstack((allx, tx)).tolil()
@@ -124,7 +125,7 @@ def load_data(dataset_str):
 
 
 def eig_dgl_adj_sparse(g, sm=0, lm=0):
-    A = g.adj(scipy_fmt='csr')
+    A = g.adj_external(scipy_fmt='csr')
     deg = np.array(A.sum(axis=0)).flatten()
     D_ = sp.sparse.diags(deg ** -0.5)
 
@@ -176,7 +177,6 @@ def load_fb100_dataset():
 
 
 def generate_node_data(dataset):
-    
     if dataset in ['cora', 'citeseer']:
 
         adj, x, y = load_data(dataset)
@@ -190,14 +190,14 @@ def generate_node_data(dataset):
         x = torch.FloatTensor(x)
         y = torch.LongTensor(y)
 
-        torch.save([e, u, x, y],  'data/{}.pt'.format(dataset))
+        torch.save([e, u, x, y], 'data/{}.pt'.format(dataset))
 
     elif dataset in ['photo']:
         data = np.load('node_raw_data/amazon_electronics_photo.npz', allow_pickle=True)
-        adj = sp.sparse.csr_matrix((data['adj_data'], data['adj_indices'], data['adj_indptr']), 
-                            shape=data['adj_shape']).toarray()
-        feat = sp.sparse.csr_matrix((data['attr_data'], data['attr_indices'], data['attr_indptr']), 
-                            shape=data['attr_shape']).toarray()
+        adj = sp.sparse.csr_matrix((data['adj_data'], data['adj_indices'], data['adj_indptr']),
+                                   shape=data['adj_shape']).toarray()
+        feat = sp.sparse.csr_matrix((data['attr_data'], data['attr_indices'], data['attr_indptr']),
+                                    shape=data['attr_shape']).toarray()
         x = feature_normalize(feat)
         y = data['labels']
         e, u = eigen_decompositon(adj)
@@ -207,7 +207,7 @@ def generate_node_data(dataset):
         x = torch.FloatTensor(x)
         y = torch.LongTensor(y)
 
-        torch.save([e, u, x, y],  'data/{}.pt'.format(dataset))
+        torch.save([e, u, x, y], 'data/{}.pt'.format(dataset))
 
     elif dataset in ['arxiv']:
         data = DglNodePropPredDataset('ogbn-arxiv')
@@ -219,7 +219,7 @@ def generate_node_data(dataset):
         x = g.ndata['feat']
         y = data[0][1]
 
-        torch.save([e, u, x, y],  'data/arxiv.pt')
+        torch.save([e, u, x, y], 'data/arxiv.pt')
 
     elif dataset in ['penn']:
         g, x, y = load_fb100_dataset()
@@ -228,7 +228,7 @@ def generate_node_data(dataset):
 
         e, u = eig_dgl_adj_sparse(g, sm=3000, lm=3000)
 
-        torch.save([e, u, x, y],  'data/penn.pt')
+        torch.save([e, u, x, y], 'data/penn.pt')
 
     elif dataset in ['chameleon', 'squirrel', 'actor']:
         edge_df = pd.read_csv('node_raw_data/{}/'.format(dataset) + 'out1_graph_edges.txt', sep='\t')
@@ -245,7 +245,7 @@ def generate_node_data(dataset):
         for i in range(len(source)):
             adj[source[i], target[i]] = 1.
             adj[target[i], source[i]] = 1.
-    
+
         if dataset == 'actor':
             # for sparse features
             nfeat = 932
@@ -275,15 +275,183 @@ def generate_node_data(dataset):
         x = torch.FloatTensor(x)
         y = torch.LongTensor(y)
 
-        torch.save([e, u, x, y],  'data/{}.pt'.format(dataset))
+        torch.save([e, u, x, y], 'data/{}.pt'.format(dataset))
+
+    elif dataset in ['NBA']:
+
+        # dataset = 'NBA'
+        edge_df = pd.read_csv('node_raw_data/{}/'.format(dataset) + 'nba_relationship.txt', sep='\t')
+        # node_df = pd.read_csv('node_raw_data/{}/'.format(dataset) + 'nba.csv', sep='\t')
+        node_df = pd.read_csv(os.path.join('node_raw_data/{}/'.format(dataset), 'nba.csv'.format(dataset)))
+        header = list(node_df.columns)
+        header.remove("user_id")
+        header.remove("country")
+        header.remove("SALARY")
+
+        y = node_df["SALARY"].values
+        feature = node_df[node_df.columns[2:]]
+        sens_idex = False  # [True,False], 选择True即为在训练集的特征中去掉敏感属性，选择False为不去掉敏感属性
+        if sens_idex:
+            feature = feature.drop(columns=["country"])
+        # print(feature["country"])
+        num_nodes = len(y)
+        adj = np.zeros((num_nodes, num_nodes))
+
+        source = list(edge_df[edge_df.columns[0]])
+        target = list(edge_df[edge_df.columns[1]])
+
+        idx = np.array(node_df["user_id"], dtype=int64)
+
+        idx_map = {i for i, j in enumerate(idx)}
+
+        for i in range(len(source)):
+            j = np.where(idx == source[i])
+
+            source[i] = j[0][0]
+
+        for i in range(len(target)):
+            j = np.where(idx == target[i])
+
+            target[i] = j[0][0]
+
+        for i in range(len(source)):
+            adj[source[i], target[i]] = 1.
+            adj[target[i], source[i]] = 1.
+        # print(source)
+
+        x = np.array(feature)
+        x = feature_normalize(x)
+
+        e, u = sp.sparse.linalg.eigsh(adj, which='LM', k=100)
+
+        e = torch.FloatTensor(e)
+        u = torch.FloatTensor(u)
+        x = torch.FloatTensor(x)
+        y = torch.LongTensor(y)
+        sens = node_df["country"].values
+        sens = torch.FloatTensor(sens)
+
+        torch.save([e, u, x, y, sens], 'data/{}.pt'.format(dataset))
+
+    elif dataset in ['pokec_z']:
+
+        edge_df = pd.read_csv('node_raw_data/pokec/' + 'region_job_relationship.txt', sep='\t')
+        # node_df = pd.read_csv('node_raw_data/{}/'.format(dataset) + 'nba.csv', sep='\t')
+        node_df = pd.read_csv(os.path.join('node_raw_data/pokec/', 'region_job.csv'))
+        header = list(node_df.columns)
+        header.remove("user_id")
+        header.remove("region")
+        header.remove("I_am_working_in_field")
+
+        y = node_df["I_am_working_in_field"].values
+
+        feature = node_df[node_df.columns[2:]]
+        sens_idex = True  # [True,False], 选择True即为在训练集的特征中去掉敏感属性，选择False为不去掉敏感属性
+        if sens_idex:
+            feature = feature.drop(columns=["region"])
+        num_nodes = len(y)
+        adj = np.zeros((num_nodes, num_nodes))
+
+        source = list(edge_df[edge_df.columns[0]])
+        target = list(edge_df[edge_df.columns[1]])
+
+        idx = np.array(node_df["user_id"], dtype=int64)
+
+        idx_map = {i for i, j in enumerate(idx)}
+
+        for i in range(len(source)):
+            j = np.where(idx == source[i])
+
+            source[i] = j[0][0]
+
+        for i in range(len(target)):
+            j = np.where(idx == target[i])
+
+            target[i] = j[0][0]
+
+        for i in range(len(source)):
+            adj[source[i], target[i]] = 1.
+            adj[target[i], source[i]] = 1.
+        # print(source)
+
+        x = np.array(feature)
+        x = feature_normalize(x)
+
+        e, u = sp.sparse.linalg.eigsh(adj, which='LM', k=1000)
+
+        e = torch.FloatTensor(e)
+        u = torch.FloatTensor(u)
+        x = torch.FloatTensor(x)
+        y = torch.LongTensor(y)
+        sens = node_df["region"].values
+        sens = torch.FloatTensor(sens)
+
+        torch.save([e, u, x, y, sens], 'data/{}.pt'.format(dataset))
+
+    elif dataset in ['pokec_n']:
+
+        edge_df = pd.read_csv('node_raw_data/pokec/' + 'region_job_2_relationship.txt', sep='\t')
+        # node_df = pd.read_csv('node_raw_data/{}/'.format(dataset) + 'nba.csv', sep='\t')
+        node_df = pd.read_csv(os.path.join('node_raw_data/pokec/', 'region_job_2.csv'))
+        header = list(node_df.columns)
+        header.remove("user_id")
+        header.remove("region")
+        header.remove("I_am_working_in_field")
+
+        y = node_df["I_am_working_in_field"].values
+
+        feature = node_df[node_df.columns[2:]]
+        sens_idex = True  # [True,False], 选择True即为在训练集的特征中去掉敏感属性，选择False为不去掉敏感属性
+        if sens_idex:
+            feature = feature.drop(columns=["region"])
+        num_nodes = len(y)
+        adj = np.zeros((num_nodes, num_nodes))
+
+        source = list(edge_df[edge_df.columns[0]])
+        target = list(edge_df[edge_df.columns[1]])
+
+        idx = np.array(node_df["user_id"], dtype=int)
+
+        idx_map = {i for i, j in enumerate(idx)}
+
+        for i in range(len(source)):
+            j = np.where(idx == source[i])
+
+            source[i] = j[0][0]
+
+        for i in range(len(target)):
+            j = np.where(idx == target[i])
+
+            target[i] = j[0][0]
+
+        for i in range(len(source)):
+            adj[source[i], target[i]] = 1.
+            adj[target[i], source[i]] = 1.
+        # print(source)
+
+        x = np.array(feature)
+        x = feature_normalize(x)
+
+        e, u = eigen_decompositon(adj)
+
+        e = torch.FloatTensor(e)
+        u = torch.FloatTensor(u)
+        x = torch.FloatTensor(x)
+        y = torch.LongTensor(y)
+        sens = node_df["region"].values
+        sens = torch.FloatTensor(sens)
+
+        torch.save([e, u, x, y, sens], 'data/{}_BE_100.pt'.format(dataset))
 
 
 if __name__ == '__main__':
-    #generate_node_data('cora')
-    #generate_node_data('citeseer')
-    #generate_node_data('photo')
-    #generate_node_data('chameleon')
-    #generate_node_data('squirrel')
-    #generate_node_data('actor')
-    generate_node_data('cora')
+    # generate_node_data('cora')
+    # generate_node_data('citeseer')
+    # generate_node_data('photo')
+    # generate_node_data('chameleon')
+    # generate_node_data('squirrel')
+    # generate_node_data('actor')
+    # generate_node_data('cora')
+    generate_node_data('NBA')     #改数据集
+     #generate_node_data('pokec_z')
 

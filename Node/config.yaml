@@ -106,3 +106,39 @@ penn:
     feat_dropout: 0.4
     prop_dropout: 0.4
     norm: 'batch'
+NBA:
+    nclass: 3
+    nlayer: 1
+    num_heads: 1
+    hidden_dim: 128
+    epoch: 20000
+    lr: 0.001
+    weight_decay: 0.00001
+    tran_dropout: 0.5
+    feat_dropout: 0.5
+    prop_dropout: 0.5
+    norm: 'batch'
+pokec_z:
+    nclass: 6
+    nlayer: 1
+    num_heads: 1
+    hidden_dim: 128
+    epoch: 20000
+    lr: 0.001
+    weight_decay: 0.00001
+    tran_dropout: 0.5
+    feat_dropout: 0.5
+    prop_dropout: 0.5
+    norm: 'batch'
+pokec_n:
+    nclass: 5
+    nlayer: 1
+    num_heads: 1
+    hidden_dim: 128
+    epoch: 20000
+    lr: 0.001
+    weight_decay: 0.00001
+    tran_dropout: 0.5
+    feat_dropout: 0.5
+    prop_dropout: 0.5
+    norm: 'batch'

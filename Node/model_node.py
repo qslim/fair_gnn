@@ -125,20 +125,21 @@ class Specformer(nn.Module):
 
         eig = self.eig_encoder(e)   # [N, d]
 
-        mha_eig = self.mha_norm(eig)
-        mha_eig, attn = self.mha(mha_eig, mha_eig, mha_eig)
-        eig = eig + self.mha_dropout(mha_eig)
-
-        ffn_eig = self.ffn_norm(eig)
-        ffn_eig = self.ffn(ffn_eig)
-        eig = self.ffn_dropout(ffn_eig)
-
-        new_e = eig  # [N, d]
-
+        # mha_eig = self.mha_norm(eig)
+        # mha_eig, attn = self.mha(mha_eig, mha_eig, mha_eig)
+        # eig = eig + self.mha_dropout(mha_eig)
+        #
+        # ffn_eig = self.ffn_norm(eig)
+        # ffn_eig = self.ffn(ffn_eig)
+        # eig = self.ffn_dropout(ffn_eig)
+        #
+        # new_e = eig  # [N, d]
         for conv in self.layers:
             basic_feats = [h]
             utx = ut @ h
-            basic_feats.append(u @ (new_e * utx))  # [N, d]
+            for i in range(self.nheads):
+                # basic_feats.append(u @ (new_e[:, i].unsqueeze(1) * utx))  # [N, d]
+                basic_feats.append(u @ (eig[:, i].unsqueeze(1) * utx))  # [N, d]
             basic_feats = torch.stack(basic_feats, axis=1)
             h = conv(basic_feats)
 
@@ -148,4 +149,3 @@ class Specformer(nn.Module):
             h = self.feat_dp2(h)
             h = self.classify(h)
             return h
-
