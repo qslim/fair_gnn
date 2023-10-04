@@ -106,7 +106,7 @@ penn:
     feat_dropout: 0.4
     prop_dropout: 0.4
     norm: 'batch'
-NBA:
+nba:
     nclass: 3
     nlayer: 1
     num_heads: 1
@@ -129,7 +129,7 @@ pokec_z:
     tran_dropout: 0.5
     feat_dropout: 0.5
     prop_dropout: 0.5
-    norm: 'batch'
+    norm: 'layer'
 pokec_n:
     nclass: 5
     nlayer: 1

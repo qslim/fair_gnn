@@ -322,7 +322,7 @@ def generate_node_data(dataset):
         x = np.array(feature)
         x = feature_normalize(x)
 
-        e, u = sp.sparse.linalg.eigsh(adj, which='LM', k=100)
+        e, u = sp.sparse.linalg.eigsh(adj, which='LM', k=300)
 
         e = torch.FloatTensor(e)
         u = torch.FloatTensor(u)
@@ -331,7 +331,7 @@ def generate_node_data(dataset):
         sens = node_df["country"].values
         sens = torch.FloatTensor(sens)
 
-        torch.save([e, u, x, y, sens], 'data/{}.pt'.format(dataset))
+        torch.save([e, u, x, y, sens], 'data/{}_LM_300_F.pt'.format(dataset))
 
     elif dataset in ['pokec_z']:
 
