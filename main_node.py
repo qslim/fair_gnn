@@ -58,7 +58,7 @@ def main_worker(args, config, method):
 
     e, u, x, y, sens = torch.load('data/pokec_z_LM_3000_F.pt')
     e, u, x, y, sens = e, u, x, y, sens
-    features, labels, idx_train, idx_val, idx_test, sens = torch.load('data/region_job_information.pt')
+    # features, labels, idx_train, idx_val, idx_test, sens = torch.load('data/region_job_information.pt')
     # print(y)
     if len(y.size()) > 1:
         if y.size(1) > 1:
@@ -92,17 +92,17 @@ def main_worker(args, config, method):
     # print(e)
     # print(u)
     evaluation = torchmetrics.Accuracy(task='multiclass', num_classes=nclass)
-    # sens_attr = "country"  # 等于号前面的是自己命名的，方便记录下来每一个变量都对应的是什么
+    sens_attr = "region"  # 等于号前面的是自己命名的，方便记录下来每一个变量都对应的是什么
     # sens_idx = 1
-    # predict_attr = 'SALARY'
-    # label_number = 100
-    # path_credit = "node_raw_data/NBA/"
-    # if args.dataset == 'pokec_z':
-    #     args.dataset = 'region_job'
-    # adj, features, labels, idx_train, idx_val, idx_test, sens = load_credit(args.dataset, sens_attr,
-    #                                                                         predict_attr, path=path_credit,
-    #                                                                         label_number=label_number
-    #                                                                         )
+    predict_attr = 'I_am_working_in_field'
+    label_number = 1000
+    path_credit = "node_raw_data/pokec/"
+    if args.dataset == 'pokec_z':
+        args.dataset = 'region_job'
+    adj, features, labels, idx_train, idx_val, idx_test, sens = load_credit(args.dataset, sens_attr,
+                                                                            predict_attr, path=path_credit,
+                                                                            label_number=label_number
+                                                                            )
     print('success load data')
 
     # sim = calculate_similarity_matrix(adj, features, metric='cosine') #求相似矩阵

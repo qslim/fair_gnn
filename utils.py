@@ -240,6 +240,7 @@ def load_credit(dataset, sens_attr="Age", predict_attr="NoDefaultNextMonth", pat
     idx_val = torch.LongTensor(idx_val)
     idx_test = torch.LongTensor(idx_test)
 
+    torch.save([features, labels, idx_train, idx_val, idx_test, sens], 'data/{}_information.pt'.format(dataset))
     return adj, features, labels, idx_train, idx_val, idx_test, sens
 
 
