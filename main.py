@@ -47,7 +47,7 @@ def accuracy(output, labels):
 def main_worker(args, config):
     print(args, config)
     seed_everything(args.seed)
-    device = 'cuda:{}'.format(args.cuda)
+    # device = 'cuda:{}'.format(args.cuda)
     torch.cuda.set_device(args.seed)
 
     # Load the dataset and split
@@ -62,11 +62,11 @@ def main_worker(args, config):
     # x = torch.FloatTensor(x)
 
     # eigendecomposition
-    print("start sp.sparse.linalg.eigsh")
+    print("Start sp.sparse.linalg.eigsh...", end='')
     e, u = sp.sparse.linalg.eigsh(adj, which='LM', k=10)
     e = torch.FloatTensor(e).cuda()
     u = torch.FloatTensor(u).cuda()
-    print("finish sp.sparse.linalg.eigsh")
+    print("Done.")
 
     net = Specformer(1, x.size(1), config['nlayer'], config['hidden_dim'], config['num_heads'], config['tran_dropout'],
                      config['feat_dropout'], config['prop_dropout'], config['norm']).cuda()
@@ -76,7 +76,6 @@ def main_worker(args, config):
 
     best_acc = 0.0
     for epoch in range(config['epoch']):
-
         net.train()
         optimizer.zero_grad()
         logits = net(e, u, x)
@@ -96,11 +95,11 @@ def main_worker(args, config):
             best_test = acc_test
 
         print("Epoch {}:".format(epoch),
-              "acc_test= {:.4f}".format(acc_test.item()),
-              "acc_val: {:.4f}".format(acc_val.item()),
-              "dp_test: {:.4f}".format(parity),
-              "eo_test: {:.4f}".format(equality),
-              "best_acc: {:.4f}".format(best_test))
+              "acc_test= {:.6f}".format(acc_test.item()),
+              "acc_val: {:.6f}".format(acc_val.item()),
+              "dp_test: {:.6f}".format(parity),
+              "eo_test: {:.6f}".format(equality),
+              "best_acc: {:.6f}".format(best_test))
 
 
 def fair_metric(output, idx, labels, sens):
