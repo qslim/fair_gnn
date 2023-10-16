@@ -20,7 +20,7 @@ class SineEncoding(nn.Module):
         # output: [N, d]
 
         ee = e * self.constant
-        div = torch.exp(torch.arange(0, self.hidden_dim, 2) * (-math.log(10000)/self.hidden_dim)).to(e.device)
+        div = torch.exp(torch.arange(0, self.hidden_dim, 2) * (-math.log(10000) / self.hidden_dim)).to(e.device)
         pe = ee.unsqueeze(1) * div
         eeig = torch.cat((e.unsqueeze(1), torch.sin(pe), torch.cos(pe)), dim=1)
 
@@ -54,15 +54,15 @@ class SpecLayer(nn.Module):
             self.weight = nn.Parameter(torch.empty((1, nbases, ncombines)))
             nn.init.normal_(self.weight, mean=0.0, std=0.01)
 
-        if norm == 'layer':   # Arxiv
+        if norm == 'layer':  # Arxiv
             self.norm = nn.LayerNorm(ncombines)
         elif norm == 'batch':  # Penn
             self.norm = nn.BatchNorm1d(ncombines)
-        else:                  # Others
+        else:  # Others
             self.norm = None
 
     def forward(self, x):
-        x = self.prop_dropout(x) * self.weight      # [N, m, d] * [1, m, d]
+        x = self.prop_dropout(x) * self.weight  # [N, m, d] * [1, m, d]
         x = torch.sum(x, dim=1)
 
         if self.norm is not None:
@@ -75,7 +75,7 @@ class SpecLayer(nn.Module):
 class Specformer(nn.Module):
 
     def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, nheads=1,
-                tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, norm='none'):
+                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, norm='none'):
         super(Specformer, self).__init__()
 
         self.norm = norm
@@ -102,15 +102,15 @@ class Specformer(nn.Module):
         self.mha_dropout = nn.Dropout(tran_dropout)
         self.ffn_dropout = nn.Dropout(tran_dropout)
         self.mha = nn.MultiheadAttention(hidden_dim, nheads, tran_dropout)
-        self.ffn = FeedForwardNetwork(hidden_dim, hidden_dim, nclass)
-        #self.ffn = FeedForwardNetwork(hidden_dim, hidden_dim, hidden_dim)
+        self.ffn = FeedForwardNetwork(hidden_dim, hidden_dim, hidden_dim)
 
         self.feat_dp1 = nn.Dropout(feat_dropout)
         self.feat_dp2 = nn.Dropout(feat_dropout)
         if norm == 'none':
-            self.layers = nn.ModuleList([SpecLayer(2, nclass, prop_dropout, norm=norm) for i in range(nlayer)])
+            self.layers = nn.ModuleList([SpecLayer(nheads + 1, nclass, prop_dropout, norm=norm) for i in range(nlayer)])
         else:
-            self.layers = nn.ModuleList([SpecLayer(2, hidden_dim, prop_dropout, norm=norm) for i in range(nlayer)])
+            self.layers = nn.ModuleList(
+                [SpecLayer(nheads + 1, hidden_dim, prop_dropout, norm=norm) for i in range(nlayer)])
 
     def forward(self, e, u, x):
         N = e.size(0)
@@ -124,7 +124,7 @@ class Specformer(nn.Module):
             h = self.feat_dp1(x)
             h = self.linear_encoder(h)
 
-        eig = self.eig_encoder(e)   # [N, d]
+        eig = self.eig_encoder(e)  # [N, d]
 
         mha_eig = self.mha_norm(eig)
         mha_eig, attn = self.mha(mha_eig, mha_eig, mha_eig)
@@ -132,16 +132,16 @@ class Specformer(nn.Module):
 
         ffn_eig = self.ffn_norm(eig)
         ffn_eig = self.ffn(ffn_eig)
-        eig = self.ffn_dropout(ffn_eig)
+        eig = eig + self.ffn_dropout(ffn_eig)
 
-        new_e = eig  # [N, d]
+        new_e = self.decoder(eig)  # [N, m]
+
         for conv in self.layers:
             basic_feats = [h]
             utx = ut @ h
             for i in range(self.nheads):
                 basic_feats.append(u @ (new_e[:, i].unsqueeze(1) * utx))  # [N, d]
-                # basic_feats.append(u @ (eig[:, i].unsqueeze(1) * utx))  # [N, d]
-            basic_feats = torch.stack(basic_feats, axis=1)
+            basic_feats = torch.stack(basic_feats, axis=1)  # [N, m, d]
             h = conv(basic_feats)
 
         if self.norm == 'none':
@@ -150,3 +150,4 @@ class Specformer(nn.Module):
             h = self.feat_dp2(h)
             h = self.classify(h)
             return h
+
