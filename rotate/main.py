@@ -55,16 +55,18 @@ def main_worker(args, config):
     adj, x, y, idx_train, idx_val, idx_test, sens = pokec.adj, pokec.features, pokec.labels, pokec.idx_train, pokec.idx_val, pokec.idx_test, pokec.sens
 
     # feature_normalize
-    x = np.array(x)
-    rowsum = x.sum(axis=1, keepdims=True)
-    rowsum = np.clip(rowsum, 1, 1e10)
-    x = x / rowsum
-    x = torch.FloatTensor(x)
+    # x = np.array(x)
+    # rowsum = x.sum(axis=1, keepdims=True)
+    # rowsum = np.clip(rowsum, 1, 1e10)
+    # x = x / rowsum
+    # x = torch.FloatTensor(x)
 
     # eigendecomposition
-    e, u = sp.sparse.linalg.eigsh(adj, which='LM', k=1000)
-    e = torch.FloatTensor(e)
-    u = torch.FloatTensor(u)
+    print("start sp.sparse.linalg.eigsh")
+    e, u = sp.sparse.linalg.eigsh(adj, which='LM', k=10)
+    e = torch.FloatTensor(e).cuda()
+    u = torch.FloatTensor(u).cuda()
+    print("finish sp.sparse.linalg.eigsh")
 
     net = Specformer(1, x.size(1), config['nlayer'], config['hidden_dim'], config['num_heads'], config['tran_dropout'],
                      config['feat_dropout'], config['prop_dropout'], config['norm']).cuda()
@@ -86,14 +88,14 @@ def main_worker(args, config):
         logits = net(e, u, x)
         acc_val = accuracy(logits[idx_val], y[idx_val])
         acc_test = accuracy(logits[idx_test], y[idx_test])
-        parity, equality = fair_metric(y, sens, torch.argmax(logits, dim=1), idx_test)
+        parity, equality = fair_metric(logits, idx_test, y, sens)
         # print(100 * acc_test, 100 * parity, 100 * equality)
 
         if acc_val > best_acc:
             best_acc = acc_val
             best_test = acc_test
 
-        print("Epoch [{}] Test set results:".format(epoch),
+        print("Epoch {}:".format(epoch),
               "acc_test= {:.4f}".format(acc_test.item()),
               "acc_val: {:.4f}".format(acc_val.item()),
               "dp_test: {:.4f}".format(parity),
@@ -118,11 +120,11 @@ def fair_metric(output, idx, labels, sens):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--seed', type=int, default=2)
+    parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--cuda', type=int, default=0)
     parser.add_argument('--dataset', default='pokec_z')
     args = parser.parse_args()
 
-    config = yaml.load(open('config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
+    config = yaml.load(open('config_pokec.yaml'), Loader=yaml.SafeLoader)[args.dataset]
     main_worker(args, config)
 
