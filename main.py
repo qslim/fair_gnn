@@ -78,7 +78,7 @@ def main_worker(args, config):
 
     e, u = [], []
     deg = np.array(adj.sum(axis=0)).flatten()
-    for eps in [0, -0.1, -0.2, -0.3, -0.4, -0.5]:
+    for eps in [-0.4]:
         print("Start building e, u with {}...".format(eps), end='')
         # build graph matrix
         D_ = sp.sparse.diags(deg ** eps)
@@ -143,7 +143,7 @@ def main_worker(args, config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=0)
-    parser.add_argument('--cuda', type=int, default=0)
+    parser.add_argument('--cuda', type=int, default=3)
     parser.add_argument('--dataset', default='pokec_z')
     args = parser.parse_args()
 
