@@ -76,20 +76,22 @@ def main_worker(args, config):
     # x = x / rowsum
     # x = torch.FloatTensor(x)
 
-    # build graph matrix
-    print("Start build graph matrix...", end='')
+    e, u = [], []
     deg = np.array(adj.sum(axis=0)).flatten()
-    D_ = sp.sparse.diags(deg ** -0.5)
-    A_ = D_.dot(adj.dot(D_))
-    L_ = sp.sparse.eye(adj.shape[0]) - A_
-    print("Done.")
+    for eps in [0, -0.25, -0.5]:
+        print("Start building e, u with {}...".format(eps), end='')
+        # build graph matrix
+        D_ = sp.sparse.diags(deg ** eps)
+        A_ = D_.dot(adj.dot(D_))
+        # L_ = sp.sparse.eye(adj.shape[0]) - A_
 
-    # eigendecomposition
-    print("Start sp.sparse.linalg.eigsh...", end='')
-    e, u = sp.sparse.linalg.eigsh(L_, which='LM', k=10)
-    e = torch.FloatTensor(e).cuda()
-    u = torch.FloatTensor(u).cuda()
-    print("Done.")
+        # eigendecomposition
+        _e, _u = sp.sparse.linalg.eigsh(A_, which='LM', k=10)
+        e.append(_e)
+        u.append(_u)
+        print("Done.")
+    e, u = torch.cat(e, dim=0), torch.cat(u, dim=1)
+    e, u = torch.FloatTensor(e).cuda(), torch.FloatTensor(u).cuda()
 
     net = Specformer(1, x.size(1), config['nlayer'], config['hidden_dim'], config['num_heads'], config['tran_dropout'],
                      config['feat_dropout'], config['prop_dropout'], config['norm']).cuda()
