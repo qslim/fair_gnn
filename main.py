@@ -137,16 +137,34 @@ def main_worker(args, config):
           "dp_val: {:.6f}".format(best_dp),
           "dp_test: {:.6f}".format(best_dp_test),
           "eo_val: {:.6f}".format(best_eo),
-          "eo_test: {:.6f}".format(best_eo_test), )
+          "eo_test: {:.6f}".format(best_eo_test))
+    return best_test.item(), best_acc.item(), best_dp, best_dp_test, best_eo, best_eo_test
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--seeds', type=int, default=[0, 1, 2, 3, 4])
     parser.add_argument('--cuda', type=int, default=3)
     parser.add_argument('--dataset', default='pokec_z')
     args = parser.parse_args()
 
     config = yaml.load(open('config_pokec.yaml'), Loader=yaml.SafeLoader)[args.dataset]
-    main_worker(args, config)
+    test, val, dp, dp_test, eo, eo_test = [], [], [], [], [], []
+    for seed in args.seeds:
+        args.seed = seed
+        _test, _val, _dp, _dp_test, _eo, _eo_test = main_worker(args, config)
+        test.append(_test)
+        val.append(_val)
+        dp.append(_dp)
+        dp_test.append(_dp_test)
+        eo.append(_eo)
+        eo_test.append(_eo_test)
+    test_mean = np.mean(np.array(test, dtype=float))
+    print("Mean results:",
+          "acc_test= {:.6f}".format(np.mean(np.array(test, dtype=float))),
+          "acc_val: {:.6f}".format(np.mean(np.array(val, dtype=float))),
+          "dp_val: {:.6f}".format(np.mean(np.array(dp, dtype=float))),
+          "dp_test: {:.6f}".format(np.mean(np.array(dp_test, dtype=float))),
+          "eo_val: {:.6f}".format(np.mean(np.array(eo, dtype=float))),
+          "eo_test: {:.6f}".format(np.mean(np.array(eo_test, dtype=float))))
 
