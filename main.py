@@ -76,9 +76,17 @@ def main_worker(args, config):
     # x = x / rowsum
     # x = torch.FloatTensor(x)
 
+    # build graph matrix
+    print("Start build graph matrix...", end='')
+    deg = np.array(adj.sum(axis=0)).flatten()
+    D_ = sp.sparse.diags(deg ** -0.5)
+    A_ = D_.dot(adj.dot(D_))
+    L_ = sp.sparse.eye(adj.shape[0]) - A_
+    print("Done.")
+
     # eigendecomposition
     print("Start sp.sparse.linalg.eigsh...", end='')
-    e, u = sp.sparse.linalg.eigsh(adj, which='LM', k=10)
+    e, u = sp.sparse.linalg.eigsh(L_, which='LM', k=10)
     e = torch.FloatTensor(e).cuda()
     u = torch.FloatTensor(u).cuda()
     print("Done.")
