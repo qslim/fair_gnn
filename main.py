@@ -10,7 +10,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import os
 from model import Specformer
-from fairgraph_dataset import POKEC
+from fairgraph_dataset import POKEC, NBA
 import scipy as sp
 
 
@@ -66,8 +66,15 @@ def main_worker(args, config):
     # torch.cuda.set_device(args.cuda)
 
     # Load the dataset and split
-    pokec = POKEC(dataset_sample='pokec_z')  # you may also choose 'pokec_n'
-    adj, x, labels, idx_train, idx_val, idx_test, sens = pokec.adj, pokec.features, pokec.labels, pokec.idx_train, pokec.idx_val, pokec.idx_test, pokec.sens
+    if args.dataset == 'nba':
+        dataset = NBA()
+    elif args.dataset == 'pokec_z':
+        dataset = POKEC(dataset_sample='pokec_z')
+    elif args.dataset == 'pokec_n':
+        dataset = POKEC(dataset_sample='pokec_n')
+    else:
+        raise ValueError('Unknown dataset!')
+    adj, x, labels, idx_train, idx_val, idx_test, sens = dataset.adj, dataset.features, dataset.labels, dataset.idx_train, dataset.idx_val, dataset.idx_test, dataset.sens
 
     # feature_normalize
     # x = np.array(x)
@@ -148,7 +155,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', default='pokec_z')
     args = parser.parse_args()
 
-    config = yaml.load(open('config_pokec.yaml'), Loader=yaml.SafeLoader)[args.dataset]
+    config = yaml.load(open('config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
     test, val, dp, dp_test, eo, eo_test = [], [], [], [], [], []
     for seed in args.seeds:
         args.seed = seed

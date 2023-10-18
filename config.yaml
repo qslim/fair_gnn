@@ -1,0 +1,33 @@
+nba:
+    nlayer: 1
+    num_heads: 1
+    hidden_dim: 128
+    epoch: 2000
+    lr: 0.001
+    weight_decay: 0.00001
+    tran_dropout: 0.5
+    feat_dropout: 0.5
+    prop_dropout: 0.5
+    norm: 'batch'
+pokec_z:
+    nlayer: 1
+    num_heads: 1
+    hidden_dim: 128
+    epoch: 2000
+    lr: 0.001
+    weight_decay: 0.00001
+    tran_dropout: 0.5
+    feat_dropout: 0.5
+    prop_dropout: 0.5
+    norm: 'layer'
+pokec_n:
+    nlayer: 1
+    num_heads: 1
+    hidden_dim: 128
+    epoch: 2000
+    lr: 0.001
+    weight_decay: 0.00001
+    tran_dropout: 0.5
+    feat_dropout: 0.5
+    prop_dropout: 0.5
+    norm: 'layer'
