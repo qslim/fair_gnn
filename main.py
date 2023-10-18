@@ -93,7 +93,7 @@ def main_worker(args, config):
     e, u = torch.cat(e, dim=0).cuda(), torch.cat(u, dim=1).cuda()
 
     net = Specformer(1, x.size(1), config['nlayer'], config['hidden_dim'], config['num_heads'], config['tran_dropout'],
-                     config['feat_dropout'], config['prop_dropout'], config['norm']).cuda()
+                     config['feat_dropout'], config['prop_dropout'], config['norm'], num_eigen=e.shape[0]).cuda()
     net.apply(init_params)
     optimizer = torch.optim.Adam(net.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
     print(count_parameters(net))

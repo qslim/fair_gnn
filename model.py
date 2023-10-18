@@ -75,7 +75,7 @@ class SpecLayer(nn.Module):
 class Specformer(nn.Module):
 
     def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, nheads=1,
-                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, norm='none'):
+                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, norm='none', num_eigen=-1):
         super(Specformer, self).__init__()
 
         self.norm = norm
@@ -112,7 +112,12 @@ class Specformer(nn.Module):
             self.layers = nn.ModuleList(
                 [SpecLayer(nheads + 1, hidden_dim, prop_dropout, norm=norm) for i in range(nlayer)])
 
+        self._rotater = nn.Parameter(torch.empty((num_eigen, num_eigen)))
+        nn.init.normal_(self._rotater, mean=0.0, std=0.01)
+        self.rotater = self._rotater @ self._rotater.permute(1, 0)
+
     def forward(self, e, u, x):
+
         N = e.size(0)
         ut = u.permute(1, 0)
 
@@ -140,7 +145,7 @@ class Specformer(nn.Module):
             basic_feats = [h]
             utx = ut @ h
             for i in range(self.nheads):
-                basic_feats.append(u @ (new_e[:, i].unsqueeze(1) * utx))  # [N, d]
+                basic_feats.append(0.5 * u @ (new_e[:, i].unsqueeze(1) * utx) + 0.5 * u @ self.rotater @ utx)  # [N, d]
             basic_feats = torch.stack(basic_feats, axis=1)  # [N, m, d]
             h = conv(basic_feats)
 
