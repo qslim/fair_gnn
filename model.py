@@ -114,10 +114,10 @@ class Specformer(nn.Module):
 
         self._rotater = nn.Parameter(torch.empty((num_eigen, num_eigen)))
         nn.init.normal_(self._rotater, mean=0.0, std=0.01)
-        self.rotater = self._rotater @ self._rotater.permute(1, 0)
 
     def forward(self, e, u, x):
 
+        self.rotater = self._rotater @ self._rotater.permute(1, 0)
         N = e.size(0)
         ut = u.permute(1, 0)
 
