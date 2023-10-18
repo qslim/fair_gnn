@@ -63,7 +63,7 @@ def main_worker(args, config):
     print(args, config)
     seed_everything(args.seed)
     # device = 'cuda:{}'.format(args.cuda)
-    torch.cuda.set_device(args.seed)
+    # torch.cuda.set_device(args.cuda)
 
     # Load the dataset and split
     pokec = POKEC(dataset_sample='pokec_z')  # you may also choose 'pokec_n'
