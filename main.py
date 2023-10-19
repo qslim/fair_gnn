@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import os
-from model_rota import Specformer
+from model2 import Specformer
 from fairgraph_dataset import POKEC, NBA
 import scipy as sp
 
@@ -85,7 +85,7 @@ def main_worker(args, config):
 
     e, u = [], []
     deg = np.array(adj.sum(axis=0)).flatten()
-    for eps in [-0.4]:
+    for eps in config['eps']:
         print("Start building e, u with {}...".format(eps), end='')
         # build graph matrix
         D_ = sp.sparse.diags(deg ** eps)
@@ -93,7 +93,7 @@ def main_worker(args, config):
         # L_ = sp.sparse.eye(adj.shape[0]) - A_
 
         # eigendecomposition
-        _e, _u = sp.sparse.linalg.eigsh(A_, which='LM', k=100)
+        _e, _u = sp.sparse.linalg.eigsh(A_, which='LM', k=config['eigk'])
         e.append(torch.FloatTensor(_e))
         u.append(torch.FloatTensor(_u))
         print("Done.")
@@ -122,6 +122,8 @@ def main_worker(args, config):
         parity_val, equality_val = fair_metric(output, idx_val, labels, sens)
         parity_test, equality_test = fair_metric(output, idx_test, labels, sens)
 
+        acc_val, acc_test, parity_val, equality_val, parity_test, equality_test = acc_val * 100.0, acc_test * 100.0, parity_val * 100.0, equality_val * 100.0, parity_test * 100.0, equality_test * 100.0
+
         if acc_val > best_acc:
             best_epoch = epoch
             best_acc = acc_val
@@ -132,20 +134,20 @@ def main_worker(args, config):
             best_eo_test = equality_test
 
         print("Epoch {}:".format(epoch),
-              "acc_test= {:.6f}".format(acc_test.item()),
-              "acc_val: {:.6f}".format(acc_val.item()),
-              "dp_val: {:.6f}".format(parity_val),
-              "dp_test: {:.6f}".format(parity_test),
-              "eo_val: {:.6f}".format(equality_val),
-              "eo_test: {:.6f}".format(equality_test),
-              "best_acc: {}/{:.6f}".format(best_epoch, best_test))
+              "acc_test= {:.4f}".format(acc_test.item()),
+              "acc_val: {:.4f}".format(acc_val.item()),
+              "dp_val: {:.4f}".format(parity_val),
+              "dp_test: {:.4f}".format(parity_test),
+              "eo_val: {:.4f}".format(equality_val),
+              "eo_test: {:.4f}".format(equality_test),
+              "best_acc: {}/{:.4f}".format(best_epoch, best_test))
     print("Test results:",
-          "acc_test= {:.6f}".format(best_test.item()),
-          "acc_val: {:.6f}".format(best_acc.item()),
-          "dp_val: {:.6f}".format(best_dp),
-          "dp_test: {:.6f}".format(best_dp_test),
-          "eo_val: {:.6f}".format(best_eo),
-          "eo_test: {:.6f}".format(best_eo_test))
+          "acc_test= {:.4f}".format(best_test.item()),
+          "acc_val: {:.4f}".format(best_acc.item()),
+          "dp_val: {:.4f}".format(best_dp),
+          "dp_test: {:.4f}".format(best_dp_test),
+          "eo_val: {:.4f}".format(best_eo),
+          "eo_test: {:.4f}".format(best_eo_test))
     return best_test.item(), best_acc.item(), best_dp, best_dp_test, best_eo, best_eo_test
 
 
@@ -167,12 +169,18 @@ if __name__ == '__main__':
         dp_test.append(_dp_test)
         eo.append(_eo)
         eo_test.append(_eo_test)
-    test_mean = np.mean(np.array(test, dtype=float))
+        
+    test = np.array(test, dtype=float)
+    val = np.array(val, dtype=float)
+    dp = np.array(dp, dtype=float)
+    dp_test = np.array(dp_test, dtype=float)
+    eo = np.array(eo, dtype=float)
+    eo_test = np.array(eo_test, dtype=float)
     print("Mean over {} run:".format(len(args.seeds)),
-          "acc_test= {:.6f}".format(np.mean(np.array(test, dtype=float))),
-          "acc_val: {:.6f}".format(np.mean(np.array(val, dtype=float))),
-          "dp_val: {:.6f}".format(np.mean(np.array(dp, dtype=float))),
-          "dp_test: {:.6f}".format(np.mean(np.array(dp_test, dtype=float))),
-          "eo_val: {:.6f}".format(np.mean(np.array(eo, dtype=float))),
-          "eo_test: {:.6f}".format(np.mean(np.array(eo_test, dtype=float))))
+          "acc_test= {:.4f}_{:.4f}".format(np.mean(test), np.std(test)),
+          "acc_val: {:.4f}_{:.4f}".format(np.mean(val), np.std(val)),
+          "dp_val: {:.4f}_{:.4f}".format(np.mean(dp), np.std(dp)),
+          "dp_test: {:.4f}_{:.4f}".format(np.mean(dp_test), np.std(dp_test)),
+          "eo_val: {:.4f}_{:.4f}".format(np.mean(eo), np.std(eo)),
+          "eo_test: {:.4f}_{:.4f}".format(np.mean(eo_test), np.std(eo_test)))
 
