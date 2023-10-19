@@ -123,6 +123,7 @@ def main_worker(args, config):
         parity_test, equality_test = fair_metric(output, idx_test, labels, sens)
 
         if acc_val > best_acc:
+            best_epoch = epoch
             best_acc = acc_val
             best_test = acc_test
             best_dp = parity_val
@@ -137,7 +138,7 @@ def main_worker(args, config):
               "dp_test: {:.6f}".format(parity_test),
               "eo_val: {:.6f}".format(equality_val),
               "eo_test: {:.6f}".format(equality_test),
-              "best_acc: {:.6f}".format(best_test))
+              "best_acc: {}/{:.6f}".format(best_epoch, best_test))
     print("Test results:",
           "acc_test= {:.6f}".format(best_test.item()),
           "acc_val: {:.6f}".format(best_acc.item()),
@@ -150,8 +151,8 @@ def main_worker(args, config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--seeds', type=int, default=[0, 1, 2, 3, 4])
-    parser.add_argument('--cuda', type=int, default=3)
+    parser.add_argument('--seeds', type=int, default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    parser.add_argument('--cuda', type=int, default=-1)
     parser.add_argument('--dataset', default='pokec_z')
     args = parser.parse_args()
 
@@ -167,7 +168,7 @@ if __name__ == '__main__':
         eo.append(_eo)
         eo_test.append(_eo_test)
     test_mean = np.mean(np.array(test, dtype=float))
-    print("Mean results:",
+    print("Mean over {} run:".format(len(args.seeds)),
           "acc_test= {:.6f}".format(np.mean(np.array(test, dtype=float))),
           "acc_val: {:.6f}".format(np.mean(np.array(val, dtype=float))),
           "dp_val: {:.6f}".format(np.mean(np.array(dp, dtype=float))),
