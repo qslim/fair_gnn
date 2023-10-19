@@ -72,6 +72,94 @@ class SpecLayer(nn.Module):
         return x
 
 
+class Rotaformer(nn.Module):
+
+    def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, nheads=1,
+                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, norm='none', num_eigen=-1):
+        super(Rotaformer, self).__init__()
+
+        self.norm = norm
+        self.nfeat = nfeat
+        self.nlayer = nlayer
+        self.nheads = nheads
+        self.hidden_dim = hidden_dim
+
+        self.feat_encoder = nn.Sequential(
+            nn.Linear(nfeat, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, nclass),
+        )
+
+        # for arxiv & penn
+        self.linear_encoder = nn.Linear(nfeat, hidden_dim)
+        self.classify = nn.Linear(hidden_dim, nclass)
+
+        self.eig_encoder = SineEncoding(hidden_dim)
+        self.decoder = nn.Linear(hidden_dim, nheads)
+
+        self.mha_norm = nn.LayerNorm(hidden_dim)
+        self.ffn_norm = nn.LayerNorm(hidden_dim)
+        self.mha_dropout = nn.Dropout(tran_dropout)
+        self.ffn_dropout = nn.Dropout(tran_dropout)
+        self.mha = nn.MultiheadAttention(hidden_dim, nheads, tran_dropout)
+        self.ffn = FeedForwardNetwork(hidden_dim, hidden_dim, hidden_dim)
+
+        self.feat_dp1 = nn.Dropout(feat_dropout)
+        self.feat_dp2 = nn.Dropout(feat_dropout)
+        if norm == 'none':
+            self.layers = nn.ModuleList([SpecLayer(nheads + 1, nclass, prop_dropout, norm=norm) for i in range(nlayer)])
+        else:
+            self.layers = nn.ModuleList(
+                [SpecLayer(nheads + 1, hidden_dim, prop_dropout, norm=norm) for i in range(nlayer)])
+
+        self.rotater = nn.Sequential(
+            nn.Linear(num_eigen, num_eigen),
+            nn.ReLU(),
+            nn.Linear(num_eigen, num_eigen)
+        )
+
+    def forward(self, e, u, x):
+        N = e.size(0)
+        ut = u.permute(1, 0)
+
+        if self.norm == 'none':
+            h = self.feat_dp1(x)
+            h = self.feat_encoder(h)
+            h = self.feat_dp2(h)
+        else:
+            h = self.feat_dp1(x)
+            h = self.linear_encoder(h)
+
+        eig = self.eig_encoder(e)  # [N, d]
+
+        mha_eig = self.mha_norm(eig)
+        mha_eig, attn = self.mha(mha_eig, mha_eig, mha_eig)
+        eig = eig + self.mha_dropout(mha_eig)
+
+        ffn_eig = self.ffn_norm(eig)
+        ffn_eig = self.ffn(ffn_eig)
+        eig = eig + self.ffn_dropout(ffn_eig)
+
+        new_e = self.decoder(eig)  # [N, m]
+
+        u_rotate = self.rotater(u)
+
+        for conv in self.layers:
+            basic_feats = [h]
+            utx = ut @ h
+            for i in range(self.nheads):
+                basic_feats.append(0.5 * u @ (new_e[:, i].unsqueeze(1) * utx) + 0.5 * u_rotate @ (u_rotate.permute(1, 0) @ h))  # [N, d]
+            basic_feats = torch.stack(basic_feats, axis=1)  # [N, m, d]
+            h = conv(basic_feats)
+
+        if self.norm == 'none':
+            return h
+        else:
+            h = self.feat_dp2(h)
+            h = self.classify(h)
+            return h
+
+
 class Specformer(nn.Module):
 
     def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, nheads=1,
@@ -112,13 +200,6 @@ class Specformer(nn.Module):
             self.layers = nn.ModuleList(
                 [SpecLayer(nheads + 1, hidden_dim, prop_dropout, norm=norm) for i in range(nlayer)])
 
-        # self.rotater = nn.Linear(num_eigen, num_eigen)
-        self.rotater = nn.Sequential(
-            nn.Linear(num_eigen, num_eigen),
-            nn.ReLU(),
-            nn.Linear(num_eigen, num_eigen)
-        )
-
     def forward(self, e, u, x):
         N = e.size(0)
         ut = u.permute(1, 0)
@@ -143,13 +224,11 @@ class Specformer(nn.Module):
 
         new_e = self.decoder(eig)  # [N, m]
 
-        u_rotate = self.rotater(u)
-
         for conv in self.layers:
             basic_feats = [h]
             utx = ut @ h
             for i in range(self.nheads):
-                basic_feats.append(0.5 * u @ (new_e[:, i].unsqueeze(1) * utx) + 0.5 * u_rotate @ (u_rotate.permute(1, 0) @ h))  # [N, d]
+                basic_feats.append(u @ (new_e[:, i].unsqueeze(1) * utx))  # [N, d]
             basic_feats = torch.stack(basic_feats, axis=1)  # [N, m, d]
             h = conv(basic_feats)
 
