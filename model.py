@@ -64,6 +64,29 @@ class SpecLayer(nn.Module):
         return x
 
 
+class SpecLayer2(nn.Module):
+
+    def __init__(self, nbases, ncombines, prop_dropout=0.0):
+        super(SpecLayer2, self).__init__()
+        self.prop_dropout = nn.Dropout(prop_dropout)
+
+        self.ffn = nn.Linear(ncombines, ncombines)
+
+        self.norm = nn.LayerNorm(ncombines)
+
+    def forward(self, x):
+        # x = self.prop_dropout(x) * self.weight  # [N, m, d] * [1, m, d]
+        x = self.prop_dropout(x)
+        x = self.ffn(x)
+        x = torch.sum(x, dim=1)
+
+        if self.norm is not None:
+            x = self.norm(x)
+            x = F.relu(x)
+
+        return x
+
+
 class Rotaformer(nn.Module):
 
     def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, nheads=1,
@@ -186,7 +209,7 @@ class Specformer(nn.Module):
         self.feat_dp1 = nn.Dropout(feat_dropout)
         self.feat_dp2 = nn.Dropout(feat_dropout)
         self.layers = nn.ModuleList(
-            [SpecLayer(nheads + 1, hidden_dim, prop_dropout) for i in range(nlayer)])
+            [SpecLayer2(nheads + 1, hidden_dim, prop_dropout) for i in range(nlayer)])
 
     def forward(self, e, u, x):
         N = e.size(0)
