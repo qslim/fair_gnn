@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import os
-from model2 import Specformer
+from model_rota import Specformer
 from fairgraph_dataset import POKEC, NBA
 import scipy as sp
 
