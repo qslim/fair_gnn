@@ -44,22 +44,14 @@ class FeedForwardNetwork(nn.Module):
 
 class SpecLayer(nn.Module):
 
-    def __init__(self, nbases, ncombines, prop_dropout=0.0, norm='none'):
+    def __init__(self, nbases, ncombines, prop_dropout=0.0):
         super(SpecLayer, self).__init__()
         self.prop_dropout = nn.Dropout(prop_dropout)
 
-        if norm == 'none':
-            self.weight = nn.Parameter(torch.ones((1, nbases, ncombines)))
-        else:
-            self.weight = nn.Parameter(torch.empty((1, nbases, ncombines)))
-            nn.init.normal_(self.weight, mean=0.0, std=0.01)
+        self.weight = nn.Parameter(torch.empty((1, nbases, ncombines)))
+        nn.init.normal_(self.weight, mean=0.0, std=0.01)
 
-        if norm == 'layer':  # Arxiv
-            self.norm = nn.LayerNorm(ncombines)
-        elif norm == 'batch':  # Penn
-            self.norm = nn.BatchNorm1d(ncombines)
-        else:  # Others
-            self.norm = None
+        self.norm = nn.LayerNorm(ncombines)
 
     def forward(self, x):
         x = self.prop_dropout(x) * self.weight  # [N, m, d] * [1, m, d]
@@ -166,7 +158,6 @@ class Specformer(nn.Module):
                  tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, norm='none', num_eigen=-1):
         super(Specformer, self).__init__()
 
-        self.norm = norm
         self.nfeat = nfeat
         self.nlayer = nlayer
         self.nheads = nheads
@@ -194,23 +185,15 @@ class Specformer(nn.Module):
 
         self.feat_dp1 = nn.Dropout(feat_dropout)
         self.feat_dp2 = nn.Dropout(feat_dropout)
-        if norm == 'none':
-            self.layers = nn.ModuleList([SpecLayer(nheads + 1, nclass, prop_dropout, norm=norm) for i in range(nlayer)])
-        else:
-            self.layers = nn.ModuleList(
-                [SpecLayer(nheads + 1, hidden_dim, prop_dropout, norm=norm) for i in range(nlayer)])
+        self.layers = nn.ModuleList(
+            [SpecLayer(nheads + 1, hidden_dim, prop_dropout) for i in range(nlayer)])
 
     def forward(self, e, u, x):
         N = e.size(0)
         ut = u.permute(1, 0)
 
-        if self.norm == 'none':
-            h = self.feat_dp1(x)
-            h = self.feat_encoder(h)
-            h = self.feat_dp2(h)
-        else:
-            h = self.feat_dp1(x)
-            h = self.linear_encoder(h)
+        h = self.feat_dp1(x)
+        h = self.linear_encoder(h)
 
         eig = self.eig_encoder(e)  # [N, d]
 
@@ -229,13 +212,11 @@ class Specformer(nn.Module):
             utx = ut @ h
             for i in range(self.nheads):
                 basic_feats.append(u @ (new_e[:, i].unsqueeze(1) * utx))  # [N, d]
+            # basic_feats.append(u @ (eig * utx))  # [N, d]
             basic_feats = torch.stack(basic_feats, axis=1)  # [N, m, d]
             h = conv(basic_feats)
 
-        if self.norm == 'none':
-            return h
-        else:
-            h = self.feat_dp2(h)
-            h = self.classify(h)
-            return h
+        h = self.feat_dp2(h)
+        h = self.classify(h)
+        return h
 
