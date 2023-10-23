@@ -106,6 +106,6 @@ class Specformer(nn.Module):
             h = conv(h)
 
         h = self.feat_dp2(h)
-        h = self.classify(h)
-        return h
+        y_pred = self.classify(h)
+        return y_pred, h
 

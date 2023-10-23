@@ -99,6 +99,47 @@ def main_worker(args, config):
         print("Done.")
     e, u = torch.cat(e, dim=0).cuda(), torch.cat(u, dim=1).cuda()
 
+    net_sens = Specformer(1, x.size(1), config['nlayer'], config['hidden_dim'], config['num_heads'],
+                          config['tran_dropout'],
+                          config['feat_dropout'], config['prop_dropout'], config['norm'], num_eigen=e.shape[0]).cuda()
+    net_sens.apply(init_params)
+    optimizer = torch.optim.Adam(net_sens.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
+    print(count_parameters(net_sens))
+
+    best_acc = 0.0
+    for epoch in range(config['epoch']):
+        net_sens.train()
+        optimizer.zero_grad()
+        output, _ = net_sens(e, u, x)
+        loss = F.binary_cross_entropy_with_logits(output[idx_sens_train], sens[idx_sens_train].unsqueeze(1).float())
+        acc_train = accuracy(output[idx_sens_train], sens[idx_sens_train])
+        loss.backward()
+        optimizer.step()
+
+        net_sens.eval()
+        output, _ = net_sens(e, u, x)
+        acc_val = accuracy(output[idx_val], sens[idx_val])
+        acc_test = accuracy(output[idx_test], sens[idx_test])
+
+        acc_val, acc_test = acc_val * 100.0, acc_test * 100.0
+
+        if acc_val > best_acc:
+            best_epoch = epoch
+            best_acc = acc_val
+            best_test = acc_test
+
+        print("Stage 1 Epoch {}:".format(epoch),
+              "acc_test= {:.4f}".format(acc_test.item()),
+              "acc_val: {:.4f}".format(acc_val.item()),
+              "best_acc: {}/{:.4f}".format(best_epoch, best_test))
+    print("Test results:",
+          "acc_test= {:.4f}".format(best_test.item()),
+          "acc_val: {:.4f}".format(best_acc.item()))
+
+    sens_embedding = output.detach()
+    # print(sens_embedding)
+    # sens_embedding = torch.sigmoid(output)
+
     net = Specformer(1, x.size(1), config['nlayer'], config['hidden_dim'], config['num_heads'], config['tran_dropout'],
                      config['feat_dropout'], config['prop_dropout'], config['norm'], num_eigen=e.shape[0]).cuda()
     net.apply(init_params)
@@ -106,23 +147,24 @@ def main_worker(args, config):
     print(count_parameters(net))
 
     best_acc = 0.0
+    sens_embedding = sens_embedding.squeeze().repeat(config['hidden_dim'], 1)
     for epoch in range(config['epoch']):
         net.train()
         optimizer.zero_grad()
-        output = net(e, u, x)
-        loss = F.binary_cross_entropy_with_logits(output[idx_sens_train], sens[idx_sens_train].unsqueeze(1).float())
-        acc_train = accuracy(output[idx_sens_train], sens[idx_sens_train])
+        output, emb = net(e, u, x)
+        cosine = F.cosine_similarity(sens_embedding, emb.transpose(1, 0)).abs().mean(0)
+        loss = F.binary_cross_entropy_with_logits(output[idx_train], labels[idx_train].unsqueeze(1).float())
+        loss = loss + 1.0 * cosine
+        acc_train = accuracy(output[idx_train], labels[idx_train])
         loss.backward()
         optimizer.step()
 
         net.eval()
-        output = net(e, u, x)
-        acc_val = accuracy(output[idx_val], sens[idx_val])
-        acc_test = accuracy(output[idx_test], sens[idx_test])
-        # parity_val, equality_val = fair_metric(output, idx_val, labels, sens)
-        # parity_test, equality_test = fair_metric(output, idx_test, labels, sens)
-        parity_val, equality_val = 0, 0
-        parity_test, equality_test = 0, 0
+        output, _ = net(e, u, x)
+        acc_val = accuracy(output[idx_val], labels[idx_val])
+        acc_test = accuracy(output[idx_test], labels[idx_test])
+        parity_val, equality_val = fair_metric(output, idx_val, labels, sens)
+        parity_test, equality_test = fair_metric(output, idx_test, labels, sens)
 
         acc_val, acc_test, parity_val, equality_val, parity_test, equality_test = acc_val * 100.0, acc_test * 100.0, parity_val * 100.0, equality_val * 100.0, parity_test * 100.0, equality_test * 100.0
 
@@ -135,21 +177,23 @@ def main_worker(args, config):
             best_eo = equality_val
             best_eo_test = equality_test
 
-        print("Epoch {}:".format(epoch),
-              "acc_test= {:.4f}".format(acc_test.item()),
+        print("Stage 2 Epoch {}:".format(epoch),
+              "loss: {:.4f}".format(loss.item()),
+              "cosine: {:.4f}".format(cosine.item()),
+              "acc_test: {:.4f}".format(acc_test.item()),
               "acc_val: {:.4f}".format(acc_val.item()),
               "dp_val: {:.4f}".format(parity_val),
-              "dp_test: {:.4f}".format(parity_test),
               "eo_val: {:.4f}".format(equality_val),
-              "eo_test: {:.4f}".format(equality_test),
+              "[dp_test: {:.4f}".format(parity_test),
+              "eo_test: {:.4f}]".format(equality_test),
               "best_acc: {}/{:.4f}".format(best_epoch, best_test))
     print("Test results:",
           "acc_test= {:.4f}".format(best_test.item()),
           "acc_val: {:.4f}".format(best_acc.item()),
           "dp_val: {:.4f}".format(best_dp),
-          "dp_test: {:.4f}".format(best_dp_test),
           "eo_val: {:.4f}".format(best_eo),
-          "eo_test: {:.4f}".format(best_eo_test))
+          "[dp_test: {:.4f}".format(best_dp_test),
+          "eo_test: {:.4f}]".format(best_eo_test))
     return best_test.item(), best_acc.item(), best_dp, best_dp_test, best_eo, best_eo_test
 
 
@@ -171,7 +215,7 @@ if __name__ == '__main__':
         dp_test.append(_dp_test)
         eo.append(_eo)
         eo_test.append(_eo_test)
-        
+
     test = np.array(test, dtype=float)
     val = np.array(val, dtype=float)
     dp = np.array(dp, dtype=float)
