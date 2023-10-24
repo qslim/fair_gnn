@@ -45,12 +45,12 @@ class FeedForwardNetwork(nn.Module):
 
 class SpecLayer(nn.Module):
 
-    def __init__(self, hidden_dim, prop_dropout=0.0):
+    def __init__(self, hidden_dim, signal_dim, prop_dropout=0.0):
         super(SpecLayer, self).__init__()
         self.prop_dropout = nn.Dropout(prop_dropout)
         self.ffn = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.LayerNorm(hidden_dim),
+            nn.Linear(hidden_dim, signal_dim),
+            nn.LayerNorm(signal_dim),
             nn.GELU()
             # nn.ReLU()
         )
@@ -63,12 +63,12 @@ class SpecLayer(nn.Module):
 
 class Specformer(nn.Module):
 
-    def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, nheads=1,
-                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, norm='none', num_eigen=-1):
+    def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, signal_dim=128, nheads=1,
+                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, norm='none'):
         super(Specformer, self).__init__()
 
         self.linear_encoder = nn.Linear(nfeat, hidden_dim)
-        self.classify = nn.Linear(hidden_dim, nclass)
+        self.classify = nn.Linear(signal_dim, nclass)
 
         self.eig_encoder = SineEncoding(hidden_dim)
         self.decoder = nn.Linear(hidden_dim, 1)
@@ -82,8 +82,9 @@ class Specformer(nn.Module):
 
         self.feat_dp1 = nn.Dropout(feat_dropout)
         self.feat_dp2 = nn.Dropout(feat_dropout)
-        self.layers = nn.ModuleList(
-            [SpecLayer(hidden_dim, prop_dropout) for i in range(nlayer)])
+        layers = [SpecLayer(hidden_dim, hidden_dim, prop_dropout) for i in range(nlayer - 1)]
+        layers.append(SpecLayer(hidden_dim, signal_dim, prop_dropout))
+        self.layers = nn.ModuleList(layers)
 
     def forward(self, e, u, x):
         ut = u.permute(1, 0)

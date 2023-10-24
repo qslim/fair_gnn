@@ -22,6 +22,8 @@ pokec_z:
     norm: 'layer'
     eps: [-0.4]
     eigk: 64
+    orthogonal: 0.01
+    orthog_dim: 32
 pokec_n:
     nlayer: 1
     num_heads: 1
@@ -35,3 +37,5 @@ pokec_n:
     norm: 'layer'
     eps: [-0.4]
     eigk: 64
+    orthogonal: 0.01
+    orthog_dim: 32

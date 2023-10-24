@@ -99,9 +99,16 @@ def main_worker(args, config):
         print("Done.")
     e, u = torch.cat(e, dim=0).cuda(), torch.cat(u, dim=1).cuda()
 
-    net_sens = Specformer(1, x.size(1), config['nlayer'], config['hidden_dim'], config['num_heads'],
+    net_sens = Specformer(1,
+                          x.size(1),
+                          config['nlayer'],
+                          config['hidden_dim'],
+                          config['orthog_dim'],
+                          config['num_heads'],
                           config['tran_dropout'],
-                          config['feat_dropout'], config['prop_dropout'], config['norm'], num_eigen=e.shape[0]).cuda()
+                          config['feat_dropout'],
+                          config['prop_dropout'],
+                          config['norm']).cuda()
     net_sens.apply(init_params)
     optimizer = torch.optim.Adam(net_sens.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
     print(count_parameters(net_sens))
@@ -110,16 +117,16 @@ def main_worker(args, config):
     for epoch in range(config['epoch']):
         net_sens.train()
         optimizer.zero_grad()
-        output, _ = net_sens(e, u, x)
-        loss = F.binary_cross_entropy_with_logits(output[idx_sens_train], sens[idx_sens_train].unsqueeze(1).float())
-        acc_train = accuracy(output[idx_sens_train], sens[idx_sens_train])
+        output_sens, emb_sens = net_sens(e, u, x)
+        loss = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train], sens[idx_sens_train].unsqueeze(1).float())
+        acc_train = accuracy(output_sens[idx_sens_train], sens[idx_sens_train])
         loss.backward()
         optimizer.step()
 
         net_sens.eval()
-        output, _ = net_sens(e, u, x)
-        acc_val = accuracy(output[idx_val], sens[idx_val])
-        acc_test = accuracy(output[idx_test], sens[idx_test])
+        output_sens, _ = net_sens(e, u, x)
+        acc_val = accuracy(output_sens[idx_val], sens[idx_val])
+        acc_test = accuracy(output_sens[idx_test], sens[idx_test])
 
         acc_val, acc_test = acc_val * 100.0, acc_test * 100.0
 
@@ -128,33 +135,50 @@ def main_worker(args, config):
             best_acc = acc_val
             best_test = acc_test
 
-        print("Stage 1 Epoch {}:".format(epoch),
-              "acc_test= {:.4f}".format(acc_test.item()),
-              "acc_val: {:.4f}".format(acc_val.item()),
-              "best_acc: {}/{:.4f}".format(best_epoch, best_test))
+        # print("Stage 1 Epoch {}:".format(epoch),
+        #       "acc_test= {:.4f}".format(acc_test.item()),
+        #       "acc_val: {:.4f}".format(acc_val.item()),
+        #       "best_acc: {}/{:.4f}".format(best_epoch, best_test))
     print("Test results:",
           "acc_test= {:.4f}".format(best_test.item()),
           "acc_val: {:.4f}".format(best_acc.item()))
 
-    sens_embedding = output.detach()
+    # sens_embedding = output_sens.detach()
+    sens_embedding = emb_sens.detach()
     # print(sens_embedding)
     # sens_embedding = torch.sigmoid(output)
 
-    net = Specformer(1, x.size(1), config['nlayer'], config['hidden_dim'], config['num_heads'], config['tran_dropout'],
-                     config['feat_dropout'], config['prop_dropout'], config['norm'], num_eigen=e.shape[0]).cuda()
+    net = Specformer(1,
+                     x.size(1),
+                     config['nlayer'],
+                     config['hidden_dim'],
+                     config['hidden_dim'],
+                     config['num_heads'],
+                     config['tran_dropout'],
+                     config['feat_dropout'],
+                     config['prop_dropout'],
+                     config['norm']).cuda()
     net.apply(init_params)
     optimizer = torch.optim.Adam(net.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
     print(count_parameters(net))
 
     best_acc = 0.0
-    sens_embedding = sens_embedding.squeeze().repeat(config['hidden_dim'], 1)
+    # sens_embedding = sens_embedding.squeeze().repeat(config['hidden_dim'], 1)
+    sens_embedding = sens_embedding.transpose(1, 0)
     for epoch in range(config['epoch']):
         net.train()
         optimizer.zero_grad()
         output, emb = net(e, u, x)
-        cosine = F.cosine_similarity(sens_embedding, emb.transpose(1, 0)).abs().mean(0)
+        cosine = torch.tensor(0.0)
+        emb_t = emb.transpose(1, 0)
+        for i in range(sens_embedding.shape[0]):
+            cosine_i = F.cosine_similarity(sens_embedding[i].repeat(emb_t.shape[0], 1), emb_t).abs().mean(0)
+            # cosine.append(cosine_i)
+            cosine = cosine + cosine_i
+        # cosine = torch.cat(cosine, dim=0).mean(0)
+        cosine = cosine / (sens_embedding.shape[0] * 1.0)
         loss = F.binary_cross_entropy_with_logits(output[idx_train], labels[idx_train].unsqueeze(1).float())
-        loss = loss + 1.0 * cosine
+        loss = loss + config['orthogonal'] * cosine
         acc_train = accuracy(output[idx_train], labels[idx_train])
         loss.backward()
         optimizer.step()
@@ -226,7 +250,7 @@ if __name__ == '__main__':
           "acc_test= {:.4f}_{:.4f}".format(np.mean(test), np.std(test)),
           "acc_val: {:.4f}_{:.4f}".format(np.mean(val), np.std(val)),
           "dp_val: {:.4f}_{:.4f}".format(np.mean(dp), np.std(dp)),
-          "dp_test: {:.4f}_{:.4f}".format(np.mean(dp_test), np.std(dp_test)),
           "eo_val: {:.4f}_{:.4f}".format(np.mean(eo), np.std(eo)),
-          "eo_test: {:.4f}_{:.4f}".format(np.mean(eo_test), np.std(eo_test)))
+          "[dp_test: {:.4f}_{:.4f}".format(np.mean(dp_test), np.std(dp_test)),
+          "eo_test: {:.4f}_{:.4f}]".format(np.mean(eo_test), np.std(eo_test)))
 
