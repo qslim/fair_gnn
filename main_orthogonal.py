@@ -165,18 +165,28 @@ def main_worker(args, config):
     best_acc = 0.0
     # sens_embedding = sens_embedding.squeeze().repeat(config['hidden_dim'], 1)
     sens_embedding = sens_embedding.transpose(1, 0)
+    sens_embedding_norm = sens_embedding.norm(dim=1, keepdim=True)
+    _sens_embedding = sens_embedding / torch.where(sens_embedding_norm > 1e-8, sens_embedding_norm, 1e-8)
     for epoch in range(config['epoch']):
         net.train()
         optimizer.zero_grad()
         output, emb = net(e, u, x)
-        cosine = torch.tensor(0.0)
+
         emb_t = emb.transpose(1, 0)
-        for i in range(sens_embedding.shape[0]):
-            cosine_i = F.cosine_similarity(sens_embedding[i].repeat(emb_t.shape[0], 1), emb_t).abs().mean(0)
-            # cosine.append(cosine_i)
-            cosine = cosine + cosine_i
-        # cosine = torch.cat(cosine, dim=0).mean(0)
-        cosine = cosine / (sens_embedding.shape[0] * 1.0)
+        emb_t_norm = emb_t.norm(dim=1, keepdim=True)
+        emb_t = emb_t / torch.where(emb_t_norm > 1e-8, emb_t_norm, 1e-8)
+        cosine = (_sens_embedding.unsqueeze(1) * emb_t.unsqueeze(0)).sum(2).abs().mean()
+        # print(cosine.item())
+
+        # cosine = torch.tensor(0.0)
+        # for i in range(sens_embedding.shape[0]):
+        #     cosine_i = F.cosine_similarity(sens_embedding[i].repeat(emb_t.shape[0], 1), emb_t).abs().mean(0)
+        #     # cosine.append(cosine_i)
+        #     cosine = cosine + cosine_i
+        # # cosine = torch.cat(cosine, dim=0).mean(0)
+        # cosine = cosine / (sens_embedding.shape[0] * 1.0)
+        # print(cosine.item())
+
         loss = F.binary_cross_entropy_with_logits(output[idx_train], labels[idx_train].unsqueeze(1).float())
         loss = loss + config['orthogonal'] * cosine
         acc_train = accuracy(output[idx_train], labels[idx_train])
