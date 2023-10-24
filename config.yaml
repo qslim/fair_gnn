@@ -20,9 +20,9 @@ pokec_z:
     feat_dropout: 0.5
     prop_dropout: 0.5
     norm: 'layer'
-    eps: [-0.4]
+    eps: [-0.3, -0.4]
     eigk: 128
-    orthogonal: 0.01
+    orthogonal: 0.1
     orthog_dim: 128
 pokec_n:
     nlayer: 1
