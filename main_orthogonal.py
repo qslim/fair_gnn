@@ -98,6 +98,7 @@ def main_worker(args, config):
         u.append(torch.FloatTensor(_u))
         print("Done.")
     e, u = torch.cat(e, dim=0).cuda(), torch.cat(u, dim=1).cuda()
+    # e, u = torch.stack(e, dim=0).cuda(), torch.stack(u, dim=0).cuda()
 
     net_sens = Specformer(1,
                           x.size(1),

@@ -86,7 +86,16 @@ class Specformer(nn.Module):
         layers.append(SpecLayer(hidden_dim, signal_dim, prop_dropout))
         self.layers = nn.ModuleList(layers)
 
+        # self.rotater = nn.Parameter(torch.ones((3, 1, 1)))
+        # self.rotater = nn.Parameter(torch.empty((3, 1, 1)))
+        # nn.init.xavier_uniform_(self.rotater)
+        # nn.init.normal_(self.rotater, mean=0.0, std=0.01)
+
     def forward(self, e, u, x):
+        # print(self.rotater)
+        # e = e.mean(0)
+        # u = (self.rotater * u).sum(0)
+        # u = u / u.norm(dim=0, keepdim=True)
         ut = u.permute(1, 0)
         h = self.feat_dp1(x)
         h = self.linear_encoder(h)
