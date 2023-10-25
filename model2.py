@@ -52,6 +52,7 @@ class SpecLayer(nn.Module):
             nn.Linear(hidden_dim, signal_dim),
             nn.LayerNorm(signal_dim),
             nn.GELU()
+            # nn.ELU()
             # nn.ReLU()
         )
 
