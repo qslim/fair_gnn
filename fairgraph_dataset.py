@@ -39,8 +39,8 @@ class POKEC():
             raise Exception('Invalid dataset sample! Should be one of pokec_z or pokec_n')
         self.sens_attr = "region"
         self.predict_attr = "I_am_working_in_field"
-        self.label_number = 50000
-        self.sens_number = 20000
+        self.label_number = 500
+        self.sens_number = 200
         self.seed = 20
         self.test_idx=False
         self.data_path = data_path
@@ -96,28 +96,36 @@ class POKEC():
         labels = torch.LongTensor(labels)
         # adj = sparse_mx_to_torch_sparse_tensor(adj)
 
-        
         random.seed(self.seed)
         label_idx = np.where(labels>=0)[0]
         random.shuffle(label_idx)
-        idx_train = label_idx[:min(int(0.1 * len(label_idx)),self.label_number)]
-        idx_val = label_idx[int(0.1 * len(label_idx)):int(0.2 * len(label_idx))]
+        idx_train = label_idx[:min(int(0.5 * len(label_idx)),self.label_number)]
+        idx_val = label_idx[int(0.5 * len(label_idx)):int(0.75 * len(label_idx))]
         if self.test_idx:
             idx_test = label_idx[self.label_number:]
             idx_val = idx_test
         else:
-            idx_test = label_idx[int(0.2 * len(label_idx)):]
+            idx_test = label_idx[int(0.75 * len(label_idx)):]
+
+
+
 
         sens = idx_features_labels[self.sens_attr].values
 
         sens_idx = set(np.where(sens >= 0)[0])
         idx_test = np.asarray(list(sens_idx & set(idx_test)))
         sens = torch.FloatTensor(sens)
-        idx_sens_train = torch.LongTensor(list(sens_idx))
+        idx_sens_train = list(sens_idx - set(idx_val) - set(idx_test))
+        random.seed(self.seed)
+        random.shuffle(idx_sens_train)
+        idx_sens_train = torch.LongTensor(idx_sens_train[:self.sens_number])
+
 
         idx_train = torch.LongTensor(idx_train)
         idx_val = torch.LongTensor(idx_val)
         idx_test = torch.LongTensor(idx_test)
+
+        # random.shuffle(sens_idx)
 
         return adj, features, labels, idx_train, idx_val, idx_test, sens,idx_sens_train
 
