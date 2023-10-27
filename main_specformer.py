@@ -3,13 +3,11 @@ import argparse
 import numpy as np
 import torch
 import torch.nn.functional as F
-from gcn import GCN
+from specformer import Specformer
 from fairgraph_dataset import POKEC, NBA
-import dgl
+import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric
 
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def main_worker(args, config):
     print(args, config)
@@ -28,14 +26,40 @@ def main_worker(args, config):
         raise ValueError('Unknown dataset!')
     adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = dataset.adj, dataset.features, dataset.labels, dataset.idx_train, dataset.idx_val, dataset.idx_test, dataset.sens, dataset.idx_sens_train
 
-    net_sens = GCN(nfeat=x.size(1), nhid=config['hidden_dim'], nclass=1, dropout=config['feat_dropout']).cuda()
-    # G = dgl.DGLGraph()
-    # G.from_scipy_sparse_matrix(adj)
-    G = dgl.from_scipy(adj)
-    G = dgl.remove_self_loop(G)
-    G = dgl.add_self_loop(G)
-    G = G.to(torch.device(device))
+    # feature_normalize
+    # x = np.array(x)
+    # rowsum = x.sum(axis=1, keepdims=True)
+    # rowsum = np.clip(rowsum, 1, 1e10)
+    # x = x / rowsum
+    # x = torch.FloatTensor(x)
 
+    e, u = [], []
+    deg = np.array(adj.sum(axis=0)).flatten()
+    for eps in config['eps']:
+        print("Start building e, u with {}...".format(eps), end='')
+        # build graph matrix
+        D_ = sp.sparse.diags(deg ** eps)
+        A_ = D_.dot(adj.dot(D_))
+        # L_ = sp.sparse.eye(adj.shape[0]) - A_
+
+        # eigendecomposition
+        _e, _u = sp.sparse.linalg.eigsh(A_, which='LM', k=config['eigk'], tol=1e-5)
+        e.append(torch.FloatTensor(_e))
+        u.append(torch.FloatTensor(_u))
+        print("Done.")
+    e, u = torch.cat(e, dim=0).cuda(), torch.cat(u, dim=1).cuda()
+    # e, u = torch.stack(e, dim=0).cuda(), torch.stack(u, dim=0).cuda()
+
+    net_sens = Specformer(1,
+                          x.size(1),
+                          config['nlayer'],
+                          config['hidden_dim'],
+                          config['orthog_dim'],
+                          config['num_heads'],
+                          config['tran_dropout'],
+                          config['feat_dropout'],
+                          config['prop_dropout'],
+                          config['norm']).cuda()
     net_sens.apply(init_params)
     optimizer = torch.optim.Adam(net_sens.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
     print(count_parameters(net_sens))
@@ -44,14 +68,14 @@ def main_worker(args, config):
     for epoch in range(config['epoch']):
         net_sens.train()
         optimizer.zero_grad()
-        output_sens, signal_sens = net_sens(G, x)
+        output_sens, signal_sens = net_sens(e, u, x)
         loss = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train], sens[idx_sens_train].unsqueeze(1).float())
         acc_train = accuracy(output_sens[idx_sens_train], sens[idx_sens_train])
         loss.backward()
         optimizer.step()
 
         net_sens.eval()
-        output_sens, _ = net_sens(G, x)
+        output_sens, _ = net_sens(e, u, x)
         acc_val = accuracy(output_sens[idx_val], sens[idx_val])
         acc_test = accuracy(output_sens[idx_test], sens[idx_test])
 
@@ -75,8 +99,16 @@ def main_worker(args, config):
     # print(signal_sens)
     # signal_sens = torch.sigmoid(output)
 
-    net = GCN(nfeat=x.size(1), nhid=config['hidden_dim'], nclass=1, dropout=config['feat_dropout']).cuda()
-
+    net = Specformer(1,
+                     x.size(1),
+                     config['nlayer'],
+                     config['hidden_dim'],
+                     config['hidden_dim'],
+                     config['num_heads'],
+                     config['tran_dropout'],
+                     config['feat_dropout'],
+                     config['prop_dropout'],
+                     config['norm']).cuda()
     net.apply(init_params)
     optimizer = torch.optim.Adam(net.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
     print(count_parameters(net))
@@ -89,7 +121,7 @@ def main_worker(args, config):
     for epoch in range(config['epoch']):
         net.train()
         optimizer.zero_grad()
-        output, signal = net(G, x)
+        output, signal = net(e, u, x)
 
         signal = signal.transpose(1, 0)
         # signal = signal - signal_sens.mean(dim=1, keepdim=True)
@@ -113,7 +145,7 @@ def main_worker(args, config):
         optimizer.step()
 
         net.eval()
-        output, _ = net(G, x)
+        output, _ = net(e, u, x)
         acc_val = accuracy(output[idx_val], labels[idx_val])
         acc_test = accuracy(output[idx_test], labels[idx_test])
         parity_val, equality_val = fair_metric(output, idx_val, labels, sens)

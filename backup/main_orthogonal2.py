@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import os
-from model2 import Specformer
+from specformer import Specformer
 from fairgraph_dataset import POKEC, NBA
 import scipy as sp
 
@@ -111,43 +111,9 @@ def main_worker(args, config):
                           config['prop_dropout'],
                           config['norm']).cuda()
     net_sens.apply(init_params)
-    optimizer = torch.optim.Adam(net_sens.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
+    optimizer_sens = torch.optim.Adam(net_sens.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
     print(count_parameters(net_sens))
 
-    best_acc = 0.0
-    for epoch in range(config['epoch']):
-        net_sens.train()
-        optimizer.zero_grad()
-        output_sens, signal_sens = net_sens(e, u, x)
-        loss = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train], sens[idx_sens_train].unsqueeze(1).float())
-        acc_train = accuracy(output_sens[idx_sens_train], sens[idx_sens_train])
-        loss.backward()
-        optimizer.step()
-
-        net_sens.eval()
-        output_sens, _ = net_sens(e, u, x)
-        acc_val = accuracy(output_sens[idx_val], sens[idx_val])
-        acc_test = accuracy(output_sens[idx_test], sens[idx_test])
-
-        acc_val, acc_test = acc_val * 100.0, acc_test * 100.0
-
-        if acc_val > best_acc:
-            best_epoch = epoch
-            best_acc = acc_val
-            best_test = acc_test
-
-        # print("Stage 1 Epoch {}:".format(epoch),
-        #       "acc_test= {:.4f}".format(acc_test.item()),
-        #       "acc_val: {:.4f}".format(acc_val.item()),
-        #       "best_acc: {}/{:.4f}".format(best_epoch, best_test))
-    print("Test results:",
-          "acc_test= {:.4f}".format(best_test.item()),
-          "acc_val: {:.4f}".format(best_acc.item()))
-
-    # signal_sens = output_sens.detach()
-    signal_sens = signal_sens.detach()
-    # print(signal_sens)
-    # signal_sens = torch.sigmoid(output)
 
     net = Specformer(1,
                      x.size(1),
@@ -163,36 +129,44 @@ def main_worker(args, config):
     optimizer = torch.optim.Adam(net.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
     print(count_parameters(net))
 
+
     best_acc = 0.0
-    signal_sens = signal_sens.transpose(1, 0)
-    # signal_sens = signal_sens - signal_sens.mean(dim=1, keepdim=True)
-    _signal_sens_norm = signal_sens.norm(dim=1, keepdim=True)
-    _signal_sens_normed = signal_sens / torch.where(_signal_sens_norm > 1e-8, _signal_sens_norm, 1e-8)
     for epoch in range(config['epoch']):
+        net_sens.train()
         net.train()
+        optimizer_sens.zero_grad()
         optimizer.zero_grad()
+
+        output_sens, signal_sens = net_sens(e, u, x)
         output, signal = net(e, u, x)
+
+        signal_sens = signal_sens.transpose(1, 0)
+        # signal_sens = signal_sens - signal_sens.mean(dim=1, keepdim=True)
+        _signal_sens_norm = signal_sens.norm(dim=1, keepdim=True)
+        _signal_sens_normed = signal_sens / torch.where(_signal_sens_norm > 1e-8, _signal_sens_norm, 1e-8)
 
         signal = signal.transpose(1, 0)
         # signal = signal - signal_sens.mean(dim=1, keepdim=True)
-
         _signal_norm = signal.norm(dim=1, keepdim=True)
         _signal_normed = signal / torch.where(_signal_norm > 1e-8, _signal_norm, 1e-8)
+
         cosine = (_signal_sens_normed.unsqueeze(1) * _signal_normed.unsqueeze(0)).sum(2).abs().mean()
-        # print(cosine.item())
 
-        # cosine = torch.tensor(0.0)
-        # for i in range(signal_sens.shape[0]):
-        #     _cosine = F.cosine_similarity(signal_sens[i].repeat(signal.shape[0], 1), signal).abs().mean(0)
-        #     cosine = cosine + _cosine
-        # cosine = cosine / (signal_sens.shape[0] * 1.0)
-        # print(cosine.item())
-
-        loss = F.binary_cross_entropy_with_logits(output[idx_train], labels[idx_train].unsqueeze(1).float())
-        loss = loss + config['orthogonal'] * cosine
+        loss_sens = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train],
+                                                  sens[idx_sens_train].unsqueeze(1).float())
+        loss_cls = F.binary_cross_entropy_with_logits(output[idx_train], labels[idx_train].unsqueeze(1).float())
+        loss = loss_cls + loss_sens + config['orthogonal'] * cosine
         acc_train = accuracy(output[idx_train], labels[idx_train])
+
         loss.backward()
+        optimizer_sens.step()
         optimizer.step()
+
+        net_sens.eval()
+        output_sens, _ = net_sens(e, u, x)
+        acc_val_sens = accuracy(output_sens[idx_val], sens[idx_val])
+        acc_test_sen = accuracy(output_sens[idx_test], sens[idx_test])
+        acc_val_sens, acc_test_sen = acc_val_sens * 100.0, acc_test_sen * 100.0
 
         net.eval()
         output, _ = net(e, u, x)
@@ -200,7 +174,6 @@ def main_worker(args, config):
         acc_test = accuracy(output[idx_test], labels[idx_test])
         parity_val, equality_val = fair_metric(output, idx_val, labels, sens)
         parity_test, equality_test = fair_metric(output, idx_test, labels, sens)
-
         acc_val, acc_test, parity_val, equality_val, parity_test, equality_test = acc_val * 100.0, acc_test * 100.0, parity_val * 100.0, equality_val * 100.0, parity_test * 100.0, equality_test * 100.0
 
         if acc_val > best_acc:
@@ -239,7 +212,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', default='pokec_z')
     args = parser.parse_args()
 
-    config = yaml.load(open('config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
+    config = yaml.load(open('../config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
     test, val, dp, dp_test, eo, eo_test = [], [], [], [], [], []
     for seed in args.seeds:
         args.seed = seed
