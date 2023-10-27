@@ -45,8 +45,8 @@ class POKEC():
         self.seed = 20
         self.test_idx=False
         self.data_path = data_path
-        self.process()
         self.train_ratio = train_ratio
+        self.process()
     
     @property
     def raw_paths(self):
