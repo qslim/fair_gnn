@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from gcn import GCN
 from fairgraph_dataset import POKEC, NBA
 import dgl
+import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric
 
 
@@ -29,12 +30,18 @@ def main_worker(args, config):
     adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = dataset.adj, dataset.features, dataset.labels, dataset.idx_train, dataset.idx_val, dataset.idx_test, dataset.sens, dataset.idx_sens_train
 
     net_sens = GCN(nfeat=x.size(1), nhid=config['hidden_dim'], nclass=1, dropout=config['feat_dropout']).cuda()
-    # G = dgl.DGLGraph()
-    # G.from_scipy_sparse_matrix(adj)
-    G = dgl.from_scipy(adj)
-    G = dgl.remove_self_loop(G)
-    G = dgl.add_self_loop(G)
-    G = G.to(torch.device(device))
+    # adj_norm = dgl.DGLGraph()
+    # adj_norm.from_scipy_sparse_matrix(adj)
+
+    deg = np.array(adj.sum(axis=0)).flatten()
+    D_ = sp.sparse.diags(deg ** -0.5)
+    adj_norm = D_.dot(adj.dot(D_))
+    # L_ = sp.sparse.eye(adj.shape[0]) - A_
+
+    adj_norm = dgl.from_scipy(adj_norm)
+    # adj_norm = dgl.remove_self_loop(adj_norm)
+    # adj_norm = dgl.add_self_loop(adj_norm)
+    adj_norm = adj_norm.to(torch.device(device))
 
     net_sens.apply(init_params)
     optimizer = torch.optim.Adam(net_sens.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
@@ -44,14 +51,14 @@ def main_worker(args, config):
     for epoch in range(config['epoch']):
         net_sens.train()
         optimizer.zero_grad()
-        output_sens, signal_sens = net_sens(G, x)
+        output_sens, signal_sens = net_sens(adj_norm, x)
         loss = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train], sens[idx_sens_train].unsqueeze(1).float())
         acc_train = accuracy(output_sens[idx_sens_train], sens[idx_sens_train])
         loss.backward()
         optimizer.step()
 
         net_sens.eval()
-        output_sens, _ = net_sens(G, x)
+        output_sens, _ = net_sens(adj_norm, x)
         acc_val = accuracy(output_sens[idx_val], sens[idx_val])
         acc_test = accuracy(output_sens[idx_test], sens[idx_test])
 
@@ -89,7 +96,7 @@ def main_worker(args, config):
     for epoch in range(config['epoch']):
         net.train()
         optimizer.zero_grad()
-        output, signal = net(G, x)
+        output, signal = net(adj_norm, x)
 
         signal = signal.transpose(1, 0)
         # signal = signal - signal_sens.mean(dim=1, keepdim=True)
@@ -113,7 +120,7 @@ def main_worker(args, config):
         optimizer.step()
 
         net.eval()
-        output, _ = net(G, x)
+        output, _ = net(adj_norm, x)
         acc_val = accuracy(output[idx_val], labels[idx_val])
         acc_test = accuracy(output[idx_test], labels[idx_test])
         parity_val, equality_val = fair_metric(output, idx_val, labels, sens)
