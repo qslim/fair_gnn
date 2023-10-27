@@ -27,7 +27,8 @@ class POKEC():
     def __init__(self, 
                 data_path='https://github.com/divelab/DIG_storage/raw/main/fairgraph/datasets/pockec/',
                 root='./dataset/pokec',
-                dataset_sample='pokec_z'):
+                dataset_sample='pokec_z',
+                train_ratio=0.8):
         self.name = "POKEC_Z"
         self.root = root
         self.dataset_sample = dataset_sample
@@ -45,6 +46,7 @@ class POKEC():
         self.test_idx=False
         self.data_path = data_path
         self.process()
+        self.train_ratio = train_ratio
     
     @property
     def raw_paths(self):
@@ -92,33 +94,33 @@ class POKEC():
         adj = adj + sp.eye(adj.shape[0])
 
         features = torch.FloatTensor(np.array(features.todense()))
-        assert (torch.equal(features, torch.FloatTensor(np.array(idx_features_labels[header]))))
         labels = torch.LongTensor(labels)
         # adj = sparse_mx_to_torch_sparse_tensor(adj)
 
+        import random
         random.seed(self.seed)
         label_idx = np.where(labels>=0)[0]
         random.shuffle(label_idx)
-        idx_train = label_idx[:min(int(0.5 * len(label_idx)),self.label_number)]
-        idx_val = label_idx[int(0.5 * len(label_idx)):int(0.75 * len(label_idx))]
+        idx_train = label_idx[:int(self.train_ratio * len(label_idx))]
+        idx_val = label_idx[int(self.train_ratio * len(label_idx)):int((1 + self.train_ratio) / 2 * len(label_idx))]
         if self.test_idx:
-            idx_test = label_idx[self.label_number:]
+            idx_test = label_idx[int(self.train_ratio * len(label_idx)):]
             idx_val = idx_test
         else:
-            idx_test = label_idx[int(0.75 * len(label_idx)):]
+            idx_test = label_idx[int((1 + self.train_ratio) / 2 * len(label_idx)):]
 
 
 
 
         sens = idx_features_labels[self.sens_attr].values
 
-        sens_idx = set(np.where(sens >= 0)[0])
+        sens_idx = set(np.where(sens >= 0)[0]).intersection(set(label_idx))
         idx_test = np.asarray(list(sens_idx & set(idx_test)))
         sens = torch.FloatTensor(sens)
         idx_sens_train = list(sens_idx - set(idx_val) - set(idx_test))
         random.seed(self.seed)
         random.shuffle(idx_sens_train)
-        idx_sens_train = torch.LongTensor(idx_sens_train[:self.sens_number])
+        idx_sens_train = torch.LongTensor(idx_sens_train)
 
 
         idx_train = torch.LongTensor(idx_train)
