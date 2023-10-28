@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from specformer import Specformer
-from fairgraph_dataset import POKEC, NBA
+from fairgraph_dataset2 import POKEC, NBA
 import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric
 

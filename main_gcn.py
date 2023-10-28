@@ -4,7 +4,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from gcn import GCN
-from fairgraph_dataset import POKEC, NBA
+from gat import GAT
+from sgc import SGConv
+from fairgraph_dataset2 import POKEC, NBA
 import dgl
 import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric
@@ -29,7 +31,9 @@ def main_worker(args, config):
         raise ValueError('Unknown dataset!')
     adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = dataset.adj, dataset.features, dataset.labels, dataset.idx_train, dataset.idx_val, dataset.idx_test, dataset.sens, dataset.idx_sens_train
 
-    net_sens = GCN(nfeat=x.size(1), nhid=config['hidden_dim'], nclass=1, dropout=config['feat_dropout']).cuda()
+    # net_sens = GCN(nfeat=x.size(1), nhid=config['hidden_dim'], nclass=1, dropout=config['feat_dropout']).cuda()
+    # net_sens = GAT(num_layers=2, in_dim=x.size(1), num_hidden=config['hidden_dim'], num_classes=1, heads=1, feat_drop=config['feat_dropout'], attn_drop=config['feat_dropout'], negative_slope=0.2, residual=False).cuda()
+    net_sens = SGConv(in_feats=x.size(1), out_feats=1, k=2, cached=True, bias=True).cuda()
     # adj_norm = dgl.DGLGraph()
     # adj_norm.from_scipy_sparse_matrix(adj)
 
@@ -82,8 +86,9 @@ def main_worker(args, config):
     # print(signal_sens)
     # signal_sens = torch.sigmoid(output)
 
-    net = GCN(nfeat=x.size(1), nhid=config['hidden_dim'], nclass=1, dropout=config['feat_dropout']).cuda()
-
+    # net = GCN(nfeat=x.size(1), nhid=config['hidden_dim'], nclass=1, dropout=config['feat_dropout']).cuda()
+    # net = GAT(num_layers=2, in_dim=x.size(1), num_hidden=config['hidden_dim'], num_classes=1, heads=1, feat_drop=config['feat_dropout'], attn_drop=config['feat_dropout'], negative_slope=0.2, residual=False).cuda()
+    net = SGConv(in_feats=x.size(1), out_feats=1, k=2, cached=True, bias=True).cuda()
     net.apply(init_params)
     optimizer = torch.optim.Adam(net.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
     print(count_parameters(net))
