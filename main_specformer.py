@@ -184,7 +184,7 @@ def main_worker(args, config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--seeds', type=int, default=[1, 2, 3])
+    parser.add_argument('--seeds', type=int, default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
     parser.add_argument('--dataset', default='pokec_z')
     args = parser.parse_args()
