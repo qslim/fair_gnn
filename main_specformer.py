@@ -43,7 +43,11 @@ def main_worker(args, config):
         # L_ = sp.sparse.eye(adj.shape[0]) - A_
 
         # eigendecomposition
-        _e, _u = sp.sparse.linalg.eigsh(A_, which='LM', k=config['eigk'], tol=1e-5)
+        if False:
+            _e, _u = np.linalg.eigh(A_.todense())
+            _e, _u = _e[-256:], _u[:, -256]
+        else:
+            _e, _u = sp.sparse.linalg.eigsh(A_, which='LM', k=config['eigk'], tol=1e-5)
         e.append(torch.FloatTensor(_e))
         u.append(torch.FloatTensor(_u))
         print("Done.")
