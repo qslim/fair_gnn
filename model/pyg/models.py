@@ -4,6 +4,7 @@ from torch.nn import Linear
 from torch_geometric.nn import GCNConv, ChebConv, APPNP
 from model.pyg.ChebnetII_pro import ChebnetII_prop
 from model.pyg.Chebbase_pro import Chebbase_prop
+from model.pyg.Bernpro import Bern_prop
 
 
 class GCN_Net(torch.nn.Module):
@@ -190,3 +191,33 @@ class ChebNetII_V(torch.nn.Module):
         return y, x
 
 
+
+class BernNet(torch.nn.Module):
+    def __init__(self,dataset, args):
+        super(BernNet, self).__init__()
+        self.lin1 = Linear(dataset.num_features, args.hidden)
+        self.lin2 = Linear(args.hidden, dataset.num_classes)
+        self.m = torch.nn.BatchNorm1d(dataset.num_classes)
+        self.prop1 = Bern_prop(args.K)
+
+        self.dprate = args.dprate
+        self.dropout = args.dropout
+
+    def reset_parameters(self):
+        self.prop1.reset_parameters()
+
+    def forward(self, edge_index, x):
+
+        x = F.dropout(x, p=self.dropout, training=self.training)
+        x = F.relu(self.lin1(x))
+        x = F.dropout(x, p=self.dropout, training=self.training)
+        x = self.lin2(x)
+        #x= self.m(x)
+
+        if self.dprate == 0.0:
+            y = self.prop1(x, edge_index)
+            return y, x
+        else:
+            x = F.dropout(x, p=self.dprate, training=self.training)
+            y = self.prop1(x, edge_index)
+            return y, x
