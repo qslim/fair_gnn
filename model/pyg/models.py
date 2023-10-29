@@ -1,15 +1,9 @@
 import torch
-import random
-import math
 import torch.nn.functional as F
-import os.path as osp
-import numpy as np
-import torch_geometric.transforms as T
-from torch.nn import Parameter, Linear
-from torch_geometric.nn import GATConv, GCNConv, ChebConv, APPNP
-import scipy.sparse as sp
-from model.ChebnetII_pro import ChebnetII_prop
-from model.Chebbase_pro import Chebbase_prop
+from torch.nn import Linear
+from torch_geometric.nn import GCNConv, ChebConv, APPNP
+from model.pyg.ChebnetII_pro import ChebnetII_prop
+from model.pyg.Chebbase_pro import Chebbase_prop
 
 
 class GCN_Net(torch.nn.Module):

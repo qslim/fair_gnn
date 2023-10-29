@@ -3,10 +3,9 @@ import argparse
 import numpy as np
 import torch
 import torch.nn.functional as F
-from model.gcn import GCN
+from model.dgl.gcn import GCN
 from data.fairgraph_dataset2 import POKEC, NBA
 import dgl
-import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric
 
 

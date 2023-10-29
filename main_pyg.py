@@ -3,11 +3,8 @@ import argparse
 import numpy as np
 import torch
 import torch.nn.functional as F
-from model.gcn import GCN
-from model.models import ChebNetII_V
+from model.pyg.models import ChebNetII_V
 from data.fairgraph_dataset2 import POKEC, NBA
-import dgl
-import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
 from torch_geometric.utils import remove_self_loops, add_self_loops
