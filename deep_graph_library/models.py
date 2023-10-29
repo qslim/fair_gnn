@@ -128,7 +128,7 @@ class SGConv(nn.Module):
                                    'This is harmful for some applications, '
                                    'causing silent performance regression. '
                                    'Adding self-loop on the input graph by '
-                                   'calling `g = dgl.add_self_loop(g)` will resolve '
+                                   'calling `g = deep_graph_library.add_self_loop(g)` will resolve '
                                    'the issue. Setting ``allow_zero_in_degree`` '
                                    'to be `True` when constructing this module will '
                                    'suppress the check and let the code run.')
