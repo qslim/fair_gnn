@@ -1,7 +1,4 @@
-import time
 import yaml
-import copy
-import math
 import random
 import argparse
 import numpy as np
@@ -9,8 +6,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import os
-from specformer import Specformer
-from fairgraph_dataset import POKEC, NBA
+from model.specformer import Specformer
+from data.fairgraph_dataset import POKEC, NBA
 import scipy as sp
 
 
