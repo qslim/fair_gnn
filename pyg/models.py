@@ -193,15 +193,15 @@ class ChebNetII_V(torch.nn.Module):
 
 
 class BernNet(torch.nn.Module):
-    def __init__(self,dataset, args):
+    def __init__(self,num_features, num_classes, hidden, K=2, dprate=0.5, dropout=0.5):
         super(BernNet, self).__init__()
-        self.lin1 = Linear(dataset.num_features, args.hidden)
-        self.lin2 = Linear(args.hidden, dataset.num_classes)
-        self.m = torch.nn.BatchNorm1d(dataset.num_classes)
-        self.prop1 = Bern_prop(args.K)
+        self.lin1 = Linear(num_features, hidden)
+        self.lin2 = Linear(hidden, num_classes)
+        self.m = torch.nn.BatchNorm1d(num_classes)
+        self.prop1 = Bern_prop(K)
 
-        self.dprate = args.dprate
-        self.dropout = args.dropout
+        self.dprate = dprate
+        self.dropout = dropout
 
     def reset_parameters(self):
         self.prop1.reset_parameters()
@@ -209,8 +209,8 @@ class BernNet(torch.nn.Module):
     def forward(self, edge_index, x):
 
         x = F.dropout(x, p=self.dropout, training=self.training)
-        x = F.relu(self.lin1(x))
-        x = F.dropout(x, p=self.dropout, training=self.training)
+        x_mid = F.relu(self.lin1(x))
+        x = F.dropout(x_mid, p=self.dropout, training=self.training)
         x = self.lin2(x)
         #x= self.m(x)
 
@@ -219,5 +219,5 @@ class BernNet(torch.nn.Module):
             return y, x
         else:
             x = F.dropout(x, p=self.dprate, training=self.training)
-            y = self.prop1(x, edge_index)
-            return y, x
+            x = self.prop1(x, edge_index)
+            return x, x_mid
