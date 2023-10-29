@@ -2,9 +2,9 @@ import torch
 import torch.nn.functional as F
 from torch.nn import Linear
 from torch_geometric.nn import GCNConv, ChebConv, APPNP
-from model.pyg.ChebnetII_pro import ChebnetII_prop
-from model.pyg.Chebbase_pro import Chebbase_prop
-from model.pyg.Bernpro import Bern_prop
+from pyg.ChebnetII_pro import ChebnetII_prop
+from pyg.Chebbase_pro import Chebbase_prop
+from pyg.Bernpro import Bern_prop
 
 
 class GCN_Net(torch.nn.Module):
