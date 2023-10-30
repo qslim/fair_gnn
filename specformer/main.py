@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import sys
 sys.path.append('..')
-from specformer.specformer import Specformer
+from specformer import Specformer
 from data.fairgraph_dataset2 import POKEC, NBA
 import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric

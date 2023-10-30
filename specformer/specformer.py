@@ -51,8 +51,8 @@ class SpecLayer(nn.Module):
         self.ffn = nn.Sequential(
             nn.Linear(hidden_dim, signal_dim),
             nn.LayerNorm(signal_dim),
-            # nn.GELU()
-            nn.ELU()
+            nn.GELU()
+            # nn.ELU()
             # nn.ReLU()
         )
 
