@@ -17,45 +17,6 @@ def main_worker(args, config):
     # device = 'cuda:{}'.format(args.cuda)
     # torch.cuda.set_device(args.cuda)
 
-    # Load the dataset and split
-    if args.dataset == 'nba':
-        dataset = NBA()
-    elif args.dataset == 'pokec_z':
-        dataset = POKEC(dataset_sample='pokec_z')
-    elif args.dataset == 'pokec_n':
-        dataset = POKEC(dataset_sample='pokec_n')
-    else:
-        raise ValueError('Unknown dataset!')
-    adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = dataset.adj, dataset.features, dataset.labels, dataset.idx_train, dataset.idx_val, dataset.idx_test, dataset.sens, dataset.idx_sens_train
-
-    # feature_normalize
-    # x = np.array(x)
-    # rowsum = x.sum(axis=1, keepdims=True)
-    # rowsum = np.clip(rowsum, 1, 1e10)
-    # x = x / rowsum
-    # x = torch.FloatTensor(x)
-
-    e, u = [], []
-    deg = np.array(adj.sum(axis=0)).flatten()
-    for eps in config['eps']:
-        print("Start building e, u with {}...".format(eps), end='')
-        # build graph matrix
-        D_ = sp.sparse.diags(deg ** eps)
-        A_ = D_.dot(adj.dot(D_))
-        # L_ = sp.sparse.eye(adj.shape[0]) - A_
-
-        # eigendecomposition
-        if False:
-            _e, _u = np.linalg.eigh(A_.todense())
-            _e, _u = _e[-256:], _u[:, -256]
-        else:
-            _e, _u = sp.sparse.linalg.eigsh(A_, which='LM', k=config['eigk'], tol=1e-5)
-        e.append(torch.FloatTensor(_e))
-        u.append(torch.FloatTensor(_u))
-        print("Done.")
-    e, u = torch.cat(e, dim=0).cuda(), torch.cat(u, dim=1).cuda()
-    # e, u = torch.stack(e, dim=0).cuda(), torch.stack(u, dim=0).cuda()
-
     net_sens = Specformer(1,
                           x.size(1),
                           config['nlayer'],
@@ -196,6 +157,50 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     config = yaml.load(open('../config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
+
+    
+
+    # Load the dataset and split
+    if args.dataset == 'nba':
+        dataset = NBA()
+    elif args.dataset == 'pokec_z':
+        dataset = POKEC(dataset_sample='pokec_z')
+    elif args.dataset == 'pokec_n':
+        dataset = POKEC(dataset_sample='pokec_n')
+    else:
+        raise ValueError('Unknown dataset!')
+    adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = dataset.adj, dataset.features, dataset.labels, dataset.idx_train, dataset.idx_val, dataset.idx_test, dataset.sens, dataset.idx_sens_train
+
+    # feature_normalize
+    # x = np.array(x)
+    # rowsum = x.sum(axis=1, keepdims=True)
+    # rowsum = np.clip(rowsum, 1, 1e10)
+    # x = x / rowsum
+    # x = torch.FloatTensor(x)
+
+    e, u = [], []
+    deg = np.array(adj.sum(axis=0)).flatten()
+    for eps in config['eps']:
+        print("Start building e, u with {}...".format(eps), end='')
+        # build graph matrix
+        D_ = sp.sparse.diags(deg ** eps)
+        A_ = D_.dot(adj.dot(D_))
+        # L_ = sp.sparse.eye(adj.shape[0]) - A_
+
+        # eigendecomposition
+        if False:
+            _e, _u = np.linalg.eigh(A_.todense())
+            _e, _u = _e[-256:], _u[:, -256]
+        else:
+            _e, _u = sp.sparse.linalg.eigsh(A_, which='LM', k=config['eigk'], tol=1e-5)
+        e.append(torch.FloatTensor(_e))
+        u.append(torch.FloatTensor(_u))
+        print("Done.")
+    e, u = torch.cat(e, dim=0).cuda(), torch.cat(u, dim=1).cuda()
+    # e, u = torch.stack(e, dim=0).cuda(), torch.stack(u, dim=0).cuda()
+
+
+
     test, val, dp, dp_test, eo, eo_test = [], [], [], [], [], []
     for seed in args.seeds:
         args.seed = seed
