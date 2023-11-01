@@ -1,14 +1,18 @@
 nba:
-    nlayer: 1
+    nlayer: 2
     num_heads: 1
-    hidden_dim: 128
-    epoch: 2000
+    hidden_dim: 64
+    epoch: 1000
     lr: 0.001
     weight_decay: 0.00001
-    tran_dropout: 0.5
+    tran_dropout: 0.3
     feat_dropout: 0.5
     prop_dropout: 0.5
-    norm: 'batch'
+    norm: 'layer'
+    eps: [-0.2]
+    eigk: 128
+    decorrelation: 0.0
+    decorrela_dim: 64
 pokec_z:
     nlayer: 2
     num_heads: 1

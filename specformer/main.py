@@ -82,9 +82,9 @@ def main_worker(args, config):
 
     best_acc = 0.0
     signal_sens = signal_sens.transpose(1, 0)
-    signal_sens = torch.sigmoid(signal_sens)
+    # signal_sens = torch.sigmoid(signal_sens)
     # signal_sens = torch.abs(signal_sens)
-    signal_sens = signal_sens - signal_sens.mean(dim=1, keepdim=True)
+    # signal_sens = signal_sens - signal_sens.mean(dim=1, keepdim=True)
     _signal_sens_norm = signal_sens.norm(dim=1, keepdim=True)
     _signal_sens_normed = signal_sens / torch.where(_signal_sens_norm > 1e-8, _signal_sens_norm, 1e-8)
     for epoch in range(config['epoch']):
@@ -93,9 +93,9 @@ def main_worker(args, config):
         output, signal = net(e, u, x)
 
         signal = signal.transpose(1, 0)
-        signal = torch.sigmoid(signal)
+        # signal = torch.sigmoid(signal)
         # signal = torch.abs(signal)
-        signal = signal - signal.mean(dim=1, keepdim=True)
+        # signal = signal - signal.mean(dim=1, keepdim=True)
         _signal_norm = signal.norm(dim=1, keepdim=True)
         _signal_normed = signal / torch.where(_signal_norm > 1e-8, _signal_norm, 1e-8)
         cosine = (_signal_sens_normed.unsqueeze(1) * _signal_normed.unsqueeze(0)).sum(2).abs().mean()
@@ -156,7 +156,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', type=int, default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='pokec_n')
+    parser.add_argument('--dataset', default='nba')
     args = parser.parse_args()
 
     config = yaml.load(open('./config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
@@ -164,12 +164,19 @@ if __name__ == '__main__':
     
 
     # Load the dataset and split
-    if args.dataset == 'nba':
-        dataset = NBA()
-    elif args.dataset == 'pokec_z':
+    if args.dataset == 'pokec_z':
         dataset = POKEC(dataset_sample='pokec_z')
     elif args.dataset == 'pokec_n':
         dataset = POKEC(dataset_sample='pokec_n')
+    elif args.dataset == 'nba':
+        dataset = POKEC(data_path='https://github.com/divelab/DIG_storage/raw/main/fairgraph/datasets/nba/',
+                        root='./dataset/nba',
+                        dataset_sample='nba',
+                        sens_attr='country',
+                        predict_attr='SALARY',
+                        label_number=100,
+                        sens_number=50,
+                        test_idx=True)
     else:
         raise ValueError('Unknown dataset!')
     adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = dataset.adj, dataset.features, dataset.labels, dataset.idx_train, dataset.idx_val, dataset.idx_test, dataset.sens, dataset.idx_sens_train

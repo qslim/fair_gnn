@@ -29,7 +29,12 @@ class POKEC():
     def __init__(self,
                  data_path='https://github.com/divelab/DIG_storage/raw/main/fairgraph/datasets/pockec/',
                  root='./dataset/pokec',
-                 dataset_sample='pokec_z'):
+                 dataset_sample='pokec_z',
+                 sens_attr='region',
+                 predict_attr='I_am_working_in_field',
+                 label_number=500,
+                 sens_number=200,
+                 test_idx=False):
         self.name = "POKEC_Z"
         self.root = root
         self.dataset_sample = dataset_sample
@@ -37,14 +42,16 @@ class POKEC():
             self.dataset = 'region_job'
         elif self.dataset_sample == 'pokec_n':
             self.dataset = 'region_job_2'
+        elif self.dataset_sample == 'nba':
+            self.dataset = 'nba'
         else:
             raise Exception('Invalid dataset sample! Should be one of pokec_z or pokec_n')
-        self.sens_attr = "region"
-        self.predict_attr = "I_am_working_in_field"
-        self.label_number = 500
-        self.sens_number = 200
+        self.sens_attr = sens_attr
+        self.predict_attr = predict_attr
+        self.label_number = label_number
+        self.sens_number = sens_number
         self.seed = 20
-        self.test_idx = False
+        self.test_idx = test_idx
         self.data_path = data_path
         self.process()
 
