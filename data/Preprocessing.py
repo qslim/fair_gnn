@@ -1,5 +1,5 @@
 import torch
-from utils import load_credit, load_bail, load_german, feature_norm
+from data.utils import load_credit, load_bail, load_german, feature_norm
 
 # set device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -61,5 +61,5 @@ def load_data(path_root, dataset):
     print("loaded dataset: ", dataset, "num of node: ", len(features), ' feature dim: ', features.shape[1])
 
     num_class = labels.unique().shape[0]-1
-    return adj, features, labels, idx_train, idx_val, idx_test, sens, sens_idx
+    return adj, features, labels, idx_train, idx_val, idx_test, sens
 

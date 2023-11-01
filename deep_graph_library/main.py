@@ -23,6 +23,14 @@ def main_worker(args, config):
     if args.dataset in ['credit', 'german', 'bail']:
         adj, x, labels, idx_train, idx_val, idx_test, sens = load_data(path_root='../', dataset=args.dataset)
         idx_sens_train = idx_train
+
+        x = x.cuda()
+        labels = labels.cuda()
+        idx_train = idx_train.cuda()
+        idx_val = idx_val.cuda()
+        idx_test = idx_test.cuda()
+        sens = sens.cuda()
+        idx_sens_train = idx_sens_train.long().cuda()
     else:
         # Load the dataset and split
         if args.dataset == 'nba':
