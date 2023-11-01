@@ -123,13 +123,13 @@ class POKEC():
 
         # random.shuffle(sens_idx)
 
-        print('features', features.shape)
-        print('labels', labels.shape)
-        print('idx_train', len(idx_train))
-        print('idx_val', len(idx_val))
-        print('idx_test', len(idx_test))
-        print('sens', sens.shape)
-        print('idx_sens_train', len(idx_sens_train))
+        print('features:       ', features.shape)
+        print('labels:         ', labels.shape)
+        print('idx_train:      ', len(idx_train))
+        print('idx_val:        ', len(idx_val))
+        print('idx_test:       ', len(idx_test))
+        print('sens:           ', sens.shape)
+        print('idx_sens_train: ', len(idx_sens_train))
 
         return adj, features, labels, idx_train, idx_val, idx_test, sens, idx_sens_train
 
@@ -252,13 +252,13 @@ class NBA():
         idx_val = torch.LongTensor(idx_val)
         idx_test = torch.LongTensor(idx_test)
 
-        print('features', features.shape)
-        print('labels', labels.shape)
-        print('idx_train', len(idx_train))
-        print('idx_val', len(idx_val))
-        print('idx_test', len(idx_test))
-        print('sens', sens.shape)
-        print('idx_sens_train', len(idx_sens_train))
+        print('features:       ', features.shape)
+        print('labels:         ', labels.shape)
+        print('idx_train:      ', len(idx_train))
+        print('idx_val:        ', len(idx_val))
+        print('idx_test:       ', len(idx_test))
+        print('sens:           ', sens.shape)
+        print('idx_sens_train: ', len(idx_sens_train))
 
         return adj, features, labels, idx_train, idx_val, idx_test, sens, idx_sens_train
 
