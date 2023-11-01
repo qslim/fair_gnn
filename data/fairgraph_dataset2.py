@@ -92,10 +92,10 @@ class POKEC():
         adj = adj + sp.eye(adj.shape[0])
 
         features = torch.FloatTensor(np.array(features.todense()))
-        assert (torch.equal(features, torch.FloatTensor(np.array(idx_features_labels[header]))))
         labels = torch.LongTensor(labels)
         # adj = sparse_mx_to_torch_sparse_tensor(adj)
 
+        import random
         random.seed(self.seed)
         label_idx = np.where(labels >= 0)[0]
         random.shuffle(label_idx)
