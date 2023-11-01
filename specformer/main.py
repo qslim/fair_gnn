@@ -82,7 +82,8 @@ def main_worker(args, config):
 
     best_acc = 0.0
     signal_sens = signal_sens.transpose(1, 0)
-    # signal_sens = signal_sens - signal_sens.mean(dim=1, keepdim=True)
+    signal_sens = torch.sigmoid(signal_sens)
+    signal_sens = signal_sens - signal_sens.mean(dim=1, keepdim=True)
     _signal_sens_norm = signal_sens.norm(dim=1, keepdim=True)
     _signal_sens_normed = signal_sens / torch.where(_signal_sens_norm > 1e-8, _signal_sens_norm, 1e-8)
     for epoch in range(config['epoch']):
@@ -91,8 +92,8 @@ def main_worker(args, config):
         output, signal = net(e, u, x)
 
         signal = signal.transpose(1, 0)
-        # signal = signal - signal_sens.mean(dim=1, keepdim=True)
-
+        signal = torch.sigmoid(signal)
+        signal = signal - signal.mean(dim=1, keepdim=True)
         _signal_norm = signal.norm(dim=1, keepdim=True)
         _signal_normed = signal / torch.where(_signal_norm > 1e-8, _signal_norm, 1e-8)
         cosine = (_signal_sens_normed.unsqueeze(1) * _signal_normed.unsqueeze(0)).sum(2).abs().mean()

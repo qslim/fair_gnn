@@ -41,8 +41,8 @@ class POKEC():
             raise Exception('Invalid dataset sample! Should be one of pokec_z or pokec_n')
         self.sens_attr = "region"
         self.predict_attr = "I_am_working_in_field"
-        self.label_number = 999999
-        self.sens_number = 500
+        self.label_number = 500
+        self.sens_number = 200
         self.seed = 20
         self.test_idx = False
         self.data_path = data_path
