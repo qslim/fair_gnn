@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import sys
 sys.path.append('..')
-from deep_graph_library.models import GCN
+from deep_graph_library.models import GCN, GAT
 from data.fairgraph_dataset2 import POKEC, NBA
 import dgl
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric

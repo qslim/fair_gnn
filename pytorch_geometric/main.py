@@ -31,8 +31,8 @@ def main_worker(args, config):
         raise ValueError('Unknown dataset!')
     adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = dataset.adj, dataset.features, dataset.labels, dataset.idx_train, dataset.idx_val, dataset.idx_test, dataset.sens, dataset.idx_sens_train
 
-    # net_sens = ChebNetII_V(num_features=x.size(1), num_classes=1, hidden=config['hidden_dim'], K=2, dprate=0.5, dropout=config['feat_dropout']).cuda()
-    net_sens = BernNet(num_features=x.size(1), num_classes=1, hidden=config['hidden_dim'], K=2, dprate=0.5, dropout=config['feat_dropout']).cuda()
+    net_sens = ChebNetII_V(num_features=x.size(1), num_classes=1, hidden=config['hidden_dim'], K=2, dprate=0.5, dropout=config['feat_dropout']).cuda()
+    # net_sens = BernNet(num_features=x.size(1), num_classes=1, hidden=config['hidden_dim'], K=2, dprate=0.5, dropout=config['feat_dropout']).cuda()
 
     g, _ = from_scipy_sparse_matrix(adj)
     g, _ = remove_self_loops(g)
@@ -78,8 +78,8 @@ def main_worker(args, config):
     # print(signal_sens)
     # signal_sens = torch.sigmoid(output)
 
-    # net = ChebNetII_V(num_features=x.size(1), num_classes=1, hidden=config['hidden_dim'], K=2, dprate=0.5, dropout=config['feat_dropout']).cuda()
-    net = BernNet(num_features=x.size(1), num_classes=1, hidden=config['hidden_dim'], K=2, dprate=0.5, dropout=config['feat_dropout']).cuda()
+    net = ChebNetII_V(num_features=x.size(1), num_classes=1, hidden=config['hidden_dim'], K=2, dprate=0.5, dropout=config['feat_dropout']).cuda()
+    # net = BernNet(num_features=x.size(1), num_classes=1, hidden=config['hidden_dim'], K=2, dprate=0.5, dropout=config['feat_dropout']).cuda()
     net.apply(init_params)
     optimizer = torch.optim.Adam(net.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
     print(count_parameters(net))
@@ -157,7 +157,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', type=int, default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='pokec_z')
+    parser.add_argument('--dataset', default='pokec_n')
     args = parser.parse_args()
 
     config = yaml.load(open('../config.yaml'), Loader=yaml.SafeLoader)[args.dataset]

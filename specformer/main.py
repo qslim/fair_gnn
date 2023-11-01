@@ -153,7 +153,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', type=int, default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='pokec_z')
+    parser.add_argument('--dataset', default='pokec_n')
     args = parser.parse_args()
 
     config = yaml.load(open('../config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
@@ -190,7 +190,7 @@ if __name__ == '__main__':
         # eigendecomposition
         if False:
             _e, _u = np.linalg.eigh(A_.todense())
-            _e, _u = _e[-256:], _u[:, -256]
+            _e, _u = _e[-256:], _u[:, -256:]
         else:
             _e, _u = sp.sparse.linalg.eigsh(A_, which='LM', k=config['eigk'], tol=1e-5)
         e.append(torch.FloatTensor(_e))

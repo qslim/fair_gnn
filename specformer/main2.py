@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import sys
 sys.path.append('..')
-from specformer.specformer import Specformer
+from specformer import Specformer
 from data.fairgraph_dataset2 import POKEC, NBA
 import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric
@@ -45,9 +45,9 @@ def main_worker(args, config):
         # L_ = sp.sparse.eye(adj.shape[0]) - A_
 
         # eigendecomposition
-        if False:
+        if True:
             _e, _u = np.linalg.eigh(A_.todense())
-            _e, _u = _e[-256:], _u[:, -256]
+            _e, _u = _e[-256:], _u[:, -256:]
         else:
             _e, _u = sp.sparse.linalg.eigsh(A_, which='LM', k=config['eigk'], tol=1e-5)
         e.append(torch.FloatTensor(_e))
