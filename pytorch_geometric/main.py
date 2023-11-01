@@ -110,7 +110,7 @@ def main_worker(args, config):
         # print(cosine.item())
 
         loss = F.binary_cross_entropy_with_logits(output[idx_train], labels[idx_train].unsqueeze(1).float())
-        loss = loss + config['orthogonal'] * cosine
+        loss = loss + config['decorrelation'] * cosine
         acc_train = accuracy(output[idx_train], labels[idx_train])
         loss.backward()
         optimizer.step()

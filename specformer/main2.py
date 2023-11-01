@@ -60,7 +60,7 @@ def main_worker(args, config):
                           x.size(1),
                           config['nlayer'],
                           config['hidden_dim'],
-                          config['orthog_dim'],
+                          config['decorrela_dim'],
                           config['num_heads'],
                           config['tran_dropout'],
                           config['feat_dropout'],
@@ -111,7 +111,7 @@ def main_worker(args, config):
         loss_sens = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train],
                                                   sens[idx_sens_train].unsqueeze(1).float())
         loss_cls = F.binary_cross_entropy_with_logits(output[idx_train], labels[idx_train].unsqueeze(1).float())
-        loss = loss_cls + loss_sens + config['orthogonal'] * cosine
+        loss = loss_cls + loss_sens + config['decorrelation'] * cosine
         acc_train = accuracy(output[idx_train], labels[idx_train])
         loss.backward()
         optimizer_sens.step()

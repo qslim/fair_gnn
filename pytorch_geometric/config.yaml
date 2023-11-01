@@ -5,10 +5,8 @@ nba:
     epoch: 2000
     lr: 0.001
     weight_decay: 0.00001
-    tran_dropout: 0.5
     feat_dropout: 0.5
-    prop_dropout: 0.5
-    norm: 'batch'
+    norm: 'na'
 pokec_z:
     nlayer: 2
     num_heads: 1
@@ -16,12 +14,8 @@ pokec_z:
     epoch: 500
     lr: 0.001
     weight_decay: 0.00001
-    tran_dropout: 0.5
     feat_dropout: 0.5
-    prop_dropout: 0.5
-    norm: 'layer'
-    eps: [-0.5]
-    eigk: 256
+    norm: 'na'
     decorrelation: 1.0
     decorrela_dim: 128
 pokec_n:
@@ -31,11 +25,7 @@ pokec_n:
     epoch: 1000
     lr: 0.001
     weight_decay: 0.00001
-    tran_dropout: 0.3
-    feat_dropout: 0.6
-    prop_dropout: 0.6
-    norm: 'layer'
-    eps: [-0.4]
-    eigk: 128
+    feat_dropout: 0.5
+    norm: 'na'
     decorrelation: 1.0
     decorrela_dim: 128

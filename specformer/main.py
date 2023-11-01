@@ -21,7 +21,7 @@ def main_worker(args, config):
                           x.size(1),
                           config['nlayer'],
                           config['hidden_dim'],
-                          config['orthog_dim'],
+                          config['decorrela_dim'],
                           config['num_heads'],
                           config['tran_dropout'],
                           config['feat_dropout'],
@@ -106,7 +106,7 @@ def main_worker(args, config):
         # print(cosine.item())
 
         loss = F.binary_cross_entropy_with_logits(output[idx_train], labels[idx_train].unsqueeze(1).float())
-        loss = loss + config['orthogonal'] * cosine
+        loss = loss + config['decorrelation'] * cosine
         acc_train = accuracy(output[idx_train], labels[idx_train])
         loss.backward()
         optimizer.step()
