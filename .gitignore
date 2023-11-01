@@ -9,7 +9,6 @@ alpha/
 .coverage
 .coverage.*
 
-dataset/
 checkpoint/
 
 !torch_geometric/data/
