@@ -9,6 +9,7 @@ from deep_graph_library.models import GCN, GAT
 from data.fairgraph_dataset2 import POKEC, NBA
 import dgl
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric
+from data.Preprocessing import load_data
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -19,16 +20,23 @@ def main_worker(args, config):
     # device = 'cuda:{}'.format(args.cuda)
     # torch.cuda.set_device(args.cuda)
 
-    # Load the dataset and split
-    if args.dataset == 'nba':
-        dataset = NBA()
-    elif args.dataset == 'pokec_z':
-        dataset = POKEC(dataset_sample='pokec_z')
-    elif args.dataset == 'pokec_n':
-        dataset = POKEC(dataset_sample='pokec_n')
+    if args.dataset in ['credit', 'german', 'bail']:
+        adj, x, labels, idx_train, idx_val, idx_test, sens = load_data(path_root='../', dataset=args.dataset)
+        idx_sens_train = idx_train
     else:
-        raise ValueError('Unknown dataset!')
-    adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = dataset.adj, dataset.features, dataset.labels, dataset.idx_train, dataset.idx_val, dataset.idx_test, dataset.sens, dataset.idx_sens_train
+        # Load the dataset and split
+        if args.dataset == 'nba':
+            dataset = NBA()
+        elif args.dataset == 'pokec_z':
+            dataset = POKEC(dataset_sample='pokec_z')
+        elif args.dataset == 'pokec_n':
+            dataset = POKEC(dataset_sample='pokec_n')
+        else:
+            raise ValueError('Unknown dataset!')
+        adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = dataset.adj, dataset.features, dataset.labels, dataset.idx_train, dataset.idx_val, dataset.idx_test, dataset.sens, dataset.idx_sens_train
+
+
+
 
     net_sens = GCN(nfeat=x.size(1), nhid=config['hidden_dim'], nclass=1, dropout=config['feat_dropout']).cuda()
     # net_sens = GAT(num_layers=2, in_dim=x.size(1), num_hidden=config['hidden_dim'], num_classes=1, heads=1, feat_drop=config['feat_dropout'], attn_drop=config['feat_dropout'], negative_slope=0.2, residual=False).cuda()
@@ -165,7 +173,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', type=int, default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='pokec_z')
+    parser.add_argument('--dataset', default='credit')
     args = parser.parse_args()
 
     config = yaml.load(open('./config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
