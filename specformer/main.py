@@ -156,7 +156,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', default='pokec_n')
     args = parser.parse_args()
 
-    config = yaml.load(open('../config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
+    config = yaml.load(open('./config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
 
     
 

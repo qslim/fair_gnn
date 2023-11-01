@@ -168,7 +168,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', default='pokec_z')
     args = parser.parse_args()
 
-    config = yaml.load(open('../config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
+    config = yaml.load(open('./config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
     test, val, dp, dp_test, eo, eo_test = [], [], [], [], [], []
     for seed in args.seeds:
         args.seed = seed
