@@ -41,8 +41,8 @@ class POKEC():
             raise Exception('Invalid dataset sample! Should be one of pokec_z or pokec_n')
         self.sens_attr = "region"
         self.predict_attr = "I_am_working_in_field"
-        self.label_number = 500
-        self.sens_number = 200
+        self.label_number = 999999
+        self.sens_number = 500
         self.seed = 20
         self.test_idx = False
         self.data_path = data_path
@@ -122,6 +122,14 @@ class POKEC():
         idx_test = torch.LongTensor(idx_test)
 
         # random.shuffle(sens_idx)
+
+        print('features', features.shape)
+        print('labels', labels.shape)
+        print('idx_train', len(idx_train))
+        print('idx_val', len(idx_val))
+        print('idx_test', len(idx_test))
+        print('sens', sens.shape)
+        print('idx_sens_train', len(idx_sens_train))
 
         return adj, features, labels, idx_train, idx_val, idx_test, sens, idx_sens_train
 
@@ -243,6 +251,14 @@ class NBA():
         idx_train = torch.LongTensor(idx_train)
         idx_val = torch.LongTensor(idx_val)
         idx_test = torch.LongTensor(idx_test)
+
+        print('features', features.shape)
+        print('labels', labels.shape)
+        print('idx_train', len(idx_train))
+        print('idx_val', len(idx_val))
+        print('idx_test', len(idx_test))
+        print('sens', sens.shape)
+        print('idx_sens_train', len(idx_sens_train))
 
         return adj, features, labels, idx_train, idx_val, idx_test, sens, idx_sens_train
 
