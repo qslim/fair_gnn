@@ -36,7 +36,8 @@ def main_worker(args, config):
         net_sens.train()
         optimizer.zero_grad()
         output_sens, _ = net_sens(e, u, x)
-        loss = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train], sens[idx_sens_train].unsqueeze(1).float())
+        pred_sens = torch.sigmoid(output_sens)
+        loss = F.binary_cross_entropy(pred_sens[idx_sens_train], sens[idx_sens_train].unsqueeze(1).float())
         acc_train = accuracy(output_sens[idx_sens_train], sens[idx_sens_train])
         loss.backward()
         optimizer.step()
@@ -75,9 +76,10 @@ def main_worker(args, config):
     optimizer = torch.optim.Adam(net.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
     print(count_parameters(net))
 
-    output_sens = output_sens.detach()
-    output_sens = output_sens.squeeze()
-    output_sens[idx_sens_train] = sens[idx_sens_train]
+    pred_sens = pred_sens.detach()
+    pred_sens = pred_sens.squeeze()
+    pred_sens[idx_sens_train] = sens[idx_sens_train]
+    pred_sens = pred_sens - pred_sens.mean()
 
     best_acc = 0.0
     for epoch in range(config['epoch']):
@@ -86,9 +88,11 @@ def main_worker(args, config):
         output, _ = net(e, u, x)
 
         # debias linearly
-        output = output - 1.0 * (output.squeeze() * output_sens).sum() / output_sens.norm(dim=0) * output_sens.unsqueeze(-1)
+        pred = torch.sigmoid(output).squeeze()
+        pred_mean = pred.mean()
+        pred = ((pred - pred_mean) - 1.0 * ((pred - pred_mean) * pred_sens).sum() / (pred_sens.norm(dim=0) + 1e-8) * pred_sens + pred_mean).unsqueeze(-1)
 
-        loss = F.binary_cross_entropy_with_logits(output[idx_train], labels[idx_train].unsqueeze(1).float())
+        loss = F.binary_cross_entropy(pred[idx_train], labels[idx_train].unsqueeze(1).float())
         acc_train = accuracy(output[idx_train], labels[idx_train])
         loss.backward()
         optimizer.step()
