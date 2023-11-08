@@ -88,11 +88,13 @@ def main_worker(args, config):
         output, _ = net(e, u, x)
 
         # debias linearly
-        pred = torch.sigmoid(output).squeeze()
+        # pred = torch.sigmoid(output).squeeze()
+        pred = output.squeeze()
         pred_mean = pred.mean()
         pred = ((pred - pred_mean) - 1.0 * ((pred - pred_mean) * pred_sens).sum() / (pred_sens.norm(dim=0) + 1e-8) * pred_sens + pred_mean).unsqueeze(-1)
 
-        loss = F.binary_cross_entropy(pred[idx_train], labels[idx_train].unsqueeze(1).float())
+        # loss = F.binary_cross_entropy(pred[idx_train], labels[idx_train].unsqueeze(1).float())
+        loss = F.binary_cross_entropy(torch.sigmoid(pred)[idx_train], labels[idx_train].unsqueeze(1).float())
         acc_train = accuracy(output[idx_train], labels[idx_train])
         loss.backward()
         optimizer.step()
