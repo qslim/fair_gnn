@@ -17,7 +17,7 @@ pokec_z:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
-    epoch: 500
+    epoch: 10000
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.5
