@@ -1,5 +1,5 @@
 import torch
-from data.utils import load_credit, load_bail, load_german, feature_norm
+from data.utils import load_credit, load_bail, load_german, load_pokec, feature_norm
 
 # set device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -23,6 +23,7 @@ def load_data(path_root, dataset):
         norm_features = feature_norm(features)
         norm_features[:, sens_idx] = features[:, sens_idx]
         features = norm_features
+        idx_sens_train = idx_train
 
     # Load german dataset
     elif dataset == 'german':
@@ -35,6 +36,7 @@ def load_data(path_root, dataset):
                                                                                 predict_attr, path=path_german,
                                                                                 label_number=label_number,
                                                                                 )
+        idx_sens_train = idx_train
     # Load bail dataset
     elif dataset == 'bail':
         sens_attr = "WHITE"  # column number after feature process is 0
@@ -49,17 +51,62 @@ def load_data(path_root, dataset):
         norm_features = feature_norm(features)
         norm_features[:, sens_idx] = features[:, sens_idx]
         features = norm_features
+        idx_sens_train = idx_train
     # elif dataset == 'synthetic':
     #     sens_idx = 0
     #     label_number = 1000
     #     path_sythetic = path_root + './dataset/synthetic.mat'
     #     adj, features, labels, idx_train, idx_val, idx_test, sens, raw_data_info = load_synthetic(path=path_sythetic,
     #                                                                           label_number=label_number)
+    elif dataset in ['nba', 'pokec_z', 'pokec_n']:
+        # Load the dataset and split
+        if dataset != 'nba':
+            if dataset == 'pokec_z':
+                dataset = 'region_job'
+            else:
+                dataset = 'region_job_2'
+            sens_attr = "region"
+            predict_attr = "I_am_working_in_field"
+            label_number = 500
+            sens_number = 200
+            seed = 20
+            path = "../dataset/pokec/"
+            test_idx = False
+        else:
+            dataset = 'nba'
+            sens_attr = "country"
+            predict_attr = "SALARY"
+            label_number = 100
+            sens_number = 50
+            seed = 20
+            path = "../dataset/NBA"
+            test_idx = True
+
+        adj, features, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = load_pokec(dataset,
+                                                                                        sens_attr,
+                                                                                        predict_attr,
+                                                                                        path=path,
+                                                                                        label_number=label_number,
+                                                                                        sens_number=sens_number,
+                                                                                        seed=seed, test_idx=test_idx)
+        # x = feature_norm(x)
+        labels[labels > 1] = 1
+        sens[sens > 0] = 1
+
     else:
         raise ValueError('Unknown dataset!')
 
     print("loaded dataset: ", dataset, "num of node: ", len(features), ' feature dim: ', features.shape[1])
 
-    num_class = labels.unique().shape[0]-1
-    return adj, features, labels, idx_train, idx_val, idx_test, sens
+    # num_class = labels.unique().shape[0]-1
+
+    features = features.cuda()
+    labels = labels.cuda()
+    idx_train = idx_train.cuda()
+    idx_val = idx_val.cuda()
+    idx_test = idx_test.cuda()
+    sens = sens.cuda()
+    idx_sens_train = idx_sens_train.cuda()
+
+    return adj, features, labels, idx_train, idx_val, idx_test, sens, idx_sens_train
 

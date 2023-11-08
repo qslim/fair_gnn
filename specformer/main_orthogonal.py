@@ -6,7 +6,6 @@ import torch.nn.functional as F
 import sys
 sys.path.append('..')
 from specformer import Specformer
-from data.utils import load_pokec, feature_norm
 from data.Preprocessing import load_data
 import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric
@@ -154,61 +153,8 @@ if __name__ == '__main__':
 
     config = yaml.load(open('./config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
 
-    if args.dataset in ['credit', 'german', 'bail']:
-        adj, x, labels, idx_train, idx_val, idx_test, sens = load_data(path_root='../', dataset=args.dataset)
-        idx_sens_train = idx_train
-
-        x = x.cuda()
-        labels = labels.cuda()
-        idx_train = idx_train.cuda()
-        idx_val = idx_val.cuda()
-        idx_test = idx_test.cuda()
-        sens = sens.cuda()
-        idx_sens_train = idx_sens_train.long().cuda()
-    else:
-        # Load the dataset and split
-        if args.dataset != 'nba':
-            if args.dataset == 'pokec_z':
-                dataset = 'region_job'
-            else:
-                dataset = 'region_job_2'
-            sens_attr = "region"
-            predict_attr = "I_am_working_in_field"
-            label_number = 500
-            sens_number = 200
-            seed = 20
-            path = "../dataset/pokec/"
-            test_idx = False
-        else:
-            dataset = 'nba'
-            sens_attr = "country"
-            predict_attr = "SALARY"
-            label_number = 100
-            sens_number = 50
-            seed = 20
-            path = "../dataset/NBA"
-            test_idx = True
-        print(dataset)
-
-        adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = load_pokec(dataset,
-                                                                                        sens_attr,
-                                                                                        predict_attr,
-                                                                                        path=path,
-                                                                                        label_number=label_number,
-                                                                                        sens_number=sens_number,
-                                                                                        seed=seed, test_idx=test_idx)
-
-    # x = feature_norm(x)
-    labels[labels > 1] = 1
-    sens[sens > 0] = 1
-
-    x = x.cuda()
-    labels = labels.cuda()
-    idx_train = idx_train.cuda()
-    idx_val = idx_val.cuda()
-    idx_test = idx_test.cuda()
-    sens = sens.cuda()
-    idx_sens_train = idx_sens_train.cuda()
+    adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = load_data(path_root='../',
+                                                                                   dataset=args.dataset)
 
 
     e, u = [], []
