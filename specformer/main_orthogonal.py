@@ -6,8 +6,7 @@ import torch.nn.functional as F
 import sys
 sys.path.append('..')
 from specformer import Specformer
-from data.fairgraph_dataset2 import POKEC, NBA
-from data.utils import load_pokec
+from data.utils import load_pokec, feature_norm
 import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric
 
@@ -77,13 +76,18 @@ def main_worker(args, config):
     print(count_parameters(net))
 
     output_sens = output_sens.detach()
-    output_sens = torch.sigmoid(output_sens.squeeze())
-    # _sens_gt = torch.max(torch.abs(output_sens))
-    # assert (torch.equal(torch.abs(sens - 0.5) * 2.0, torch.ones_like(sens)))
-    # print(sens)
-    # print(_sens_gt)
-    # _sens = torch.where(sens == 1.0, _sens_gt, -_sens_gt)
-    output_sens[idx_sens_train] = sens[idx_sens_train]
+    output_sens = output_sens.squeeze()
+
+    # output_sens = torch.sigmoid(output_sens)
+    # output_sens[idx_sens_train] = sens[idx_sens_train]
+
+    _sens_gt = torch.max(torch.abs(output_sens))
+    assert (torch.equal(torch.abs(sens - 0.5) * 2.0, torch.ones_like(sens)))
+    print(sens)
+    print(_sens_gt)
+    _sens = torch.where(sens == 1.0, _sens_gt, -_sens_gt)
+    output_sens[idx_sens_train] = _sens[idx_sens_train]
+
     output_sens = output_sens - output_sens.mean()
 
     best_acc = 0.0
@@ -94,8 +98,9 @@ def main_worker(args, config):
 
         # debias linearly
         output = output.squeeze()
+        # output = (output - 1.0 * (output * output_sens).sum() / (output_sens.norm(dim=0) + 1e-8) * output_sens).unsqueeze(-1)
         output_mean = output.mean()
-        output = ((output - output_mean) - 1.0 * ((output - output_mean) * output_sens).sum() / (output_sens.norm(dim=0) + 1e-8) * output_sens + output_mean).unsqueeze(-1)
+        output = ((output - output_mean) - 0.15 * ((output - output_mean) * output_sens).sum() / (output_sens.norm(dim=0) + 1e-8) * output_sens + output_mean).unsqueeze(-1)
 
         loss = F.binary_cross_entropy_with_logits(output[idx_train], labels[idx_train].unsqueeze(1).float())
         acc_train = accuracy(output[idx_train], labels[idx_train])
@@ -143,7 +148,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', type=int, default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='pokec_z')
+    parser.add_argument('--dataset', default='pokec_n')
     args = parser.parse_args()
 
     config = yaml.load(open('./config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
@@ -182,7 +187,7 @@ if __name__ == '__main__':
                                                                                            sens_number=sens_number,
                                                                                            seed=seed, test_idx=test_idx)
 
-    x = feature_norm(x)
+    # x = feature_norm(x)
     labels[labels > 1] = 1
     sens[sens > 0] = 1
 
