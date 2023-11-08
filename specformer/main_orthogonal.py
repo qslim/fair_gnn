@@ -7,6 +7,7 @@ import sys
 sys.path.append('..')
 from specformer import Specformer
 from data.utils import load_pokec, feature_norm
+from data.Preprocessing import load_data
 import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric
 
@@ -100,7 +101,7 @@ def main_worker(args, config):
         output = output.squeeze()
         # output = (output - 1.0 * (output * output_sens).sum() / (output_sens.norm(dim=0) + 1e-8) * output_sens).unsqueeze(-1)
         output_mean = output.mean()
-        output = ((output - output_mean) - 0.15 * ((output - output_mean) * output_sens).sum() / (output_sens.norm(dim=0) + 1e-8) * output_sens + output_mean).unsqueeze(-1)
+        output = ((output - output_mean) - 0.5 * ((output - output_mean) * output_sens).sum() / (output_sens.norm(dim=0) + 1e-8) * output_sens + output_mean).unsqueeze(-1)
 
         loss = F.binary_cross_entropy_with_logits(output[idx_train], labels[idx_train].unsqueeze(1).float())
         acc_train = accuracy(output[idx_train], labels[idx_train])
@@ -148,44 +149,54 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', type=int, default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='pokec_n')
+    parser.add_argument('--dataset', default='credit')
     args = parser.parse_args()
 
     config = yaml.load(open('./config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
 
-    
+    if args.dataset in ['credit', 'german', 'bail']:
+        adj, x, labels, idx_train, idx_val, idx_test, sens = load_data(path_root='../', dataset=args.dataset)
+        idx_sens_train = idx_train
 
-    # Load the dataset and split
-    if args.dataset != 'nba':
-        if args.dataset == 'pokec_z':
-            dataset = 'region_job'
-        else:
-            dataset = 'region_job_2'
-        sens_attr = "region"
-        predict_attr = "I_am_working_in_field"
-        label_number = 500
-        sens_number = 200
-        seed = 20
-        path = "../dataset/pokec/"
-        test_idx = False
+        x = x.cuda()
+        labels = labels.cuda()
+        idx_train = idx_train.cuda()
+        idx_val = idx_val.cuda()
+        idx_test = idx_test.cuda()
+        sens = sens.cuda()
+        idx_sens_train = idx_sens_train.long().cuda()
     else:
-        dataset = 'nba'
-        sens_attr = "country"
-        predict_attr = "SALARY"
-        label_number = 100
-        sens_number = 50
-        seed = 20
-        path = "../dataset/NBA"
-        test_idx = True
-    print(dataset)
+        # Load the dataset and split
+        if args.dataset != 'nba':
+            if args.dataset == 'pokec_z':
+                dataset = 'region_job'
+            else:
+                dataset = 'region_job_2'
+            sens_attr = "region"
+            predict_attr = "I_am_working_in_field"
+            label_number = 500
+            sens_number = 200
+            seed = 20
+            path = "../dataset/pokec/"
+            test_idx = False
+        else:
+            dataset = 'nba'
+            sens_attr = "country"
+            predict_attr = "SALARY"
+            label_number = 100
+            sens_number = 50
+            seed = 20
+            path = "../dataset/NBA"
+            test_idx = True
+        print(dataset)
 
-    adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = load_pokec(dataset,
-                                                                                           sens_attr,
-                                                                                           predict_attr,
-                                                                                           path=path,
-                                                                                           label_number=label_number,
-                                                                                           sens_number=sens_number,
-                                                                                           seed=seed, test_idx=test_idx)
+        adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = load_pokec(dataset,
+                                                                                        sens_attr,
+                                                                                        predict_attr,
+                                                                                        path=path,
+                                                                                        label_number=label_number,
+                                                                                        sens_number=sens_number,
+                                                                                        seed=seed, test_idx=test_idx)
 
     # x = feature_norm(x)
     labels[labels > 1] = 1
