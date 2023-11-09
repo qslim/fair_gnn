@@ -17,6 +17,8 @@ def main_worker(args, config):
     # device = 'cuda:{}'.format(args.cuda)
     # torch.cuda.set_device(args.cuda)
 
+    E, U = e.detach().clone(), u.detach().clone()
+
     net_sens = Specformer(1,
                           x.size(1),
                           config['nlayer'],
@@ -36,14 +38,14 @@ def main_worker(args, config):
     for epoch in range(config['epoch']):
         net_sens.train()
         optimizer.zero_grad()
-        output_sens, _ = net_sens(e, u, x)
+        output_sens, _ = net_sens(E, U, x)
         loss = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train], sens[idx_sens_train].unsqueeze(1).float())
         acc_train = accuracy(output_sens[idx_sens_train], sens[idx_sens_train])
         loss.backward()
         optimizer.step()
 
         net_sens.eval()
-        output_sens, _ = net_sens(e, u, x)
+        output_sens, _ = net_sens(E, U, x)
         acc_val = accuracy(output_sens[idx_val], sens[idx_val])
         acc_test = accuracy(output_sens[idx_test], sens[idx_test])
 
@@ -84,8 +86,6 @@ def main_worker(args, config):
 
     _sens_gt = torch.max(torch.abs(output_sens))
     assert (torch.equal(torch.abs(sens - 0.5) * 2.0, torch.ones_like(sens)))
-    print(sens)
-    print(_sens_gt)
     _sens = torch.where(sens == 1.0, _sens_gt, -_sens_gt)
     output_sens[idx_sens_train] = _sens[idx_sens_train]
 
@@ -97,7 +97,7 @@ def main_worker(args, config):
     for epoch in range(config['epoch']):
         net.train()
         optimizer.zero_grad()
-        output, _ = net(e, u, x)
+        output, _ = net(E, U, x)
 
         # debias linearly
         output = output.squeeze()
@@ -111,7 +111,7 @@ def main_worker(args, config):
         optimizer.step()
 
         net.eval()
-        output, _ = net(e, u, x)
+        output, _ = net(E, U, x)
         loss_val = F.binary_cross_entropy_with_logits(output[idx_val], labels[idx_val].unsqueeze(1).float())
         acc_val = accuracy(output[idx_val], labels[idx_val])
         acc_test = accuracy(output[idx_test], labels[idx_test])
@@ -185,7 +185,6 @@ if __name__ == '__main__':
         u.append(torch.FloatTensor(_u))
         print("Done.")
     e, u = torch.cat(e, dim=0).cuda(), torch.cat(u, dim=1).cuda()
-    # e, u = torch.stack(e, dim=0).cuda(), torch.stack(u, dim=0).cuda()
 
 
 
