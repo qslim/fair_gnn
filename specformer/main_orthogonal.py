@@ -103,7 +103,7 @@ def main_worker(args, config):
         output = output.squeeze()
         # output = (output - 1.0 * (output * output_sens).sum() / (output_sens.norm(dim=0) + 1e-8) * output_sens).unsqueeze(-1)
         output_mean = output.mean()
-        output = ((output - output_mean) - 0.5 * ((output - output_mean) * output_sens).sum() / (output_sens.norm(dim=0) + 1e-8) * output_sens + output_mean).unsqueeze(-1)
+        output = ((output - output_mean) - 0.5 * 383.8109 * ((output - output_mean) * output_sens).sum() / (output_sens.pow(2).sum() + 1e-8) * output_sens + output_mean).unsqueeze(-1)
 
         loss = F.binary_cross_entropy_with_logits(output[idx_train], labels[idx_train].unsqueeze(1).float())
         acc_train = accuracy(output[idx_train], labels[idx_train])
