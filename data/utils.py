@@ -53,7 +53,7 @@ def load_credit(dataset, sens_attr="Age", predict_attr="NoDefaultNextMonth", pat
     header.remove('Single')
 
     # sensitive feature removal
-    # header.remove('Age')
+    header.remove('Age')
 
 #    # Normalize MaxBillAmountOverLast6Months
 #    idx_features_labels['MaxBillAmountOverLast6Months'] = (idx_features_labels['MaxBillAmountOverLast6Months']-idx_features_labels['MaxBillAmountOverLast6Months'].mean())/idx_features_labels['MaxBillAmountOverLast6Months'].std()
@@ -122,7 +122,7 @@ def load_bail(dataset, sens_attr="WHITE", predict_attr="RECID", path="dataset/ba
 
 
     # sensitive feature removal
-    # header.remove('WHITE')
+    header.remove('WHITE')
     
     # # Normalize School
     # idx_features_labels['SCHOOL'] = 2*(idx_features_labels['SCHOOL']-idx_features_labels['SCHOOL'].min()).div(idx_features_labels['SCHOOL'].max() - idx_features_labels['SCHOOL'].min()) - 1
@@ -199,7 +199,7 @@ def load_german(dataset, sens_attr="Gender", predict_attr="GoodCustomer", path="
 
 
     # sensitive feature removal
-    # header.remove('Gender')
+    header.remove('Gender')
 
 
     # Sensitive Attribute
