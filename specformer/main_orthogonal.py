@@ -8,7 +8,7 @@ sys.path.append('..')
 from specformer import Specformer
 from data.Preprocessing import load_data
 import scipy as sp
-from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric
+from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results
 
 
 def main_worker(args, config):
@@ -32,6 +32,7 @@ def main_worker(args, config):
     print(count_parameters(net_sens))
 
     best_acc = 0.0
+    best_epoch = -1
     for epoch in range(config['epoch']):
         net_sens.train()
         optimizer.zero_grad()
@@ -91,6 +92,8 @@ def main_worker(args, config):
     output_sens = output_sens - output_sens.mean()
 
     best_acc = 0.0
+    best_loss = 1e5
+    best_epoch = -1
     for epoch in range(config['epoch']):
         net.train()
         optimizer.zero_grad()
@@ -109,39 +112,45 @@ def main_worker(args, config):
 
         net.eval()
         output, _ = net(e, u, x)
+        loss_val = F.binary_cross_entropy_with_logits(output[idx_val], labels[idx_val].unsqueeze(1).float())
         acc_val = accuracy(output[idx_val], labels[idx_val])
         acc_test = accuracy(output[idx_test], labels[idx_test])
-        parity_val, equality_val = fair_metric(output, idx_val, labels, sens)
         parity_test, equality_test = fair_metric(output, idx_test, labels, sens)
+        auc_roc_test, f1_s_test, _ = evaluation_results(output, labels, idx_test)
 
-        acc_val, acc_test, parity_val, equality_val, parity_test, equality_test = acc_val * 100.0, acc_test * 100.0, parity_val * 100.0, equality_val * 100.0, parity_test * 100.0, equality_test * 100.0
+        acc_val, acc_test, parity_test, equality_test = acc_val * 100.0, acc_test * 100.0, parity_test * 100.0, equality_test * 100.0
+        auc_roc_test, f1_s_test = auc_roc_test * 100.0, f1_s_test * 100.0
 
+        print("Epoch {}:".format(epoch),
+              "loss: {:.4f}".format(loss.item()),
+              "loss_v: {:.4f}".format(loss_val.item()),
+              "acc_v: {:.4f}".format(acc_val.item()),
+              "acc_t: {:.4f}".format(acc_test.item()),
+              "auc_roc_t: {:.4f}".format(auc_roc_test.item()),
+              "f1_s_t: {:.4f}".format(f1_s_test.item()),
+              "[dp_t: {:.4f}".format(parity_test),
+              "eo_t: {:.4f}]".format(equality_test),
+              " {}/{:.4f}".format(best_epoch, best_test))
+
+        # if loss_val < best_loss:
+        #     best_loss = loss_val.item()
         if acc_val > best_acc:
+            best_acc = acc_val.item()
             best_epoch = epoch
-            best_acc = acc_val
-            best_test = acc_test
-            best_dp = parity_val
+            best_auc_roc_test = auc_roc_test.item()
+            best_f1_s_test = f1_s_test.item()
+            best_test = acc_test.item()
             best_dp_test = parity_test
-            best_eo = equality_val
             best_eo_test = equality_test
 
-        print("Stage 2 Epoch {}:".format(epoch),
-              "loss: {:.4f}".format(loss.item()),
-              "acc_test: {:.4f}".format(acc_test.item()),
-              "acc_val: {:.4f}".format(acc_val.item()),
-              "dp_val: {:.4f}".format(parity_val),
-              "eo_val: {:.4f}".format(equality_val),
-              "[dp_test: {:.4f}".format(parity_test),
-              "eo_test: {:.4f}]".format(equality_test),
-              "best_acc: {}/{:.4f}".format(best_epoch, best_test))
     print("Test results:",
-          "acc_test= {:.4f}".format(best_test.item()),
-          "acc_val: {:.4f}".format(best_acc.item()),
-          "dp_val: {:.4f}".format(best_dp),
-          "eo_val: {:.4f}".format(best_eo),
-          "[dp_test: {:.4f}".format(best_dp_test),
-          "eo_test: {:.4f}]".format(best_eo_test))
-    return best_test.item(), best_acc.item(), best_dp, best_dp_test, best_eo, best_eo_test
+          "acc_v: {:.4f}".format(best_acc),
+          "acc_t= {:.4f}".format(best_test),
+          "auc_roc_t= {:.4f}".format(best_auc_roc_test),
+          "f1_s_t= {:.4f}".format(best_f1_s_test),
+          "[dp_t: {:.4f}".format(best_dp_test),
+          "eo_t: {:.4f}]".format(best_eo_test))
+    return best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test
 
 
 if __name__ == '__main__':
@@ -180,28 +189,25 @@ if __name__ == '__main__':
 
 
 
-    test, val, dp, dp_test, eo, eo_test = [], [], [], [], [], []
+    acc_test, best_auc_roc_test, best_f1_s_test, dp_test, eo_test = [], [], [], [], []
     for seed in args.seeds:
         args.seed = seed
-        _test, _val, _dp, _dp_test, _eo, _eo_test = main_worker(args, config)
-        test.append(_test)
-        val.append(_val)
-        dp.append(_dp)
+        _acc_test, _best_auc_roc_test, _best_f1_s_test, _dp_test, _eo_test = main_worker(args, config)
+        acc_test.append(_acc_test)
+        best_auc_roc_test.append(_best_auc_roc_test)
+        best_f1_s_test.append(_best_f1_s_test)
         dp_test.append(_dp_test)
-        eo.append(_eo)
         eo_test.append(_eo_test)
 
-    test = np.array(test, dtype=float)
-    val = np.array(val, dtype=float)
-    dp = np.array(dp, dtype=float)
+    acc_test = np.array(acc_test, dtype=float)
+    best_auc_roc_test = np.array(best_auc_roc_test, dtype=float)
+    best_f1_s_test = np.array(best_f1_s_test, dtype=float)
     dp_test = np.array(dp_test, dtype=float)
-    eo = np.array(eo, dtype=float)
     eo_test = np.array(eo_test, dtype=float)
     print("Mean over {} run:".format(len(args.seeds)),
-          "acc_test= {:.4f}_{:.4f}".format(np.mean(test), np.std(test)),
-          "acc_val: {:.4f}_{:.4f}".format(np.mean(val), np.std(val)),
-          "dp_val: {:.4f}_{:.4f}".format(np.mean(dp), np.std(dp)),
-          "eo_val: {:.4f}_{:.4f}".format(np.mean(eo), np.std(eo)),
-          "[dp_test: {:.4f}_{:.4f}".format(np.mean(dp_test), np.std(dp_test)),
-          "eo_test: {:.4f}_{:.4f}]".format(np.mean(eo_test), np.std(eo_test)))
+          "acc= {:.4f}_{:.4f}".format(np.mean(acc_test), np.std(acc_test)),
+          "auc_roc= {:.4f}_{:.4f}".format(np.mean(best_auc_roc_test), np.std(best_auc_roc_test)),
+          "f1_s= {:.4f}_{:.4f}".format(np.mean(best_f1_s_test), np.std(best_f1_s_test)),
+          "[dp: {:.4f}_{:.4f}".format(np.mean(dp_test), np.std(dp_test)),
+          "eo: {:.4f}_{:.4f}]".format(np.mean(eo_test), np.std(eo_test)))
 

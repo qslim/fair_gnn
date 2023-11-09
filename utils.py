@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import os
+from sklearn.metrics import f1_score, roc_auc_score, accuracy_score
 
 
 def seed_everything(seed):
@@ -33,6 +34,14 @@ def accuracy(output, labels):
     correct = preds.eq(labels).double()
     correct = correct.sum()
     return correct / len(labels)
+
+
+def evaluation_results(output, labels, idx):
+    preds = (output.squeeze() > 0).type_as(labels)
+    auc_roc = roc_auc_score(labels.cpu().numpy()[idx.cpu().numpy()], output.detach().cpu().numpy()[idx.cpu().numpy()])
+    f1_s = f1_score(labels[idx.cpu().numpy()].cpu().numpy(), preds[idx.cpu().numpy()].cpu().numpy())
+    acc = accuracy_score(labels[idx.cpu().numpy()].cpu().numpy(), preds[idx.cpu().numpy()].cpu().numpy())
+    return auc_roc, f1_s, acc
 
 
 def fair_metric(output, idx, labels, sens):
