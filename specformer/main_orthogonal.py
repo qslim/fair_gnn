@@ -94,6 +94,11 @@ def main_worker(args, config):
     best_acc = 0.0
     best_loss = 1e5
     best_epoch = -1
+    best_auc_roc_test = 0.0
+    best_f1_s_test = 0.0
+    best_test = 0.0
+    best_dp_test = 1e5
+    best_eo_test = 1e5
     for epoch in range(config['epoch']):
         net.train()
         optimizer.zero_grad()
@@ -120,17 +125,6 @@ def main_worker(args, config):
         acc_val, acc_test, parity_test, equality_test = acc_val * 100.0, acc_test * 100.0, parity_test * 100.0, equality_test * 100.0
         auc_roc_test, f1_s_test = auc_roc_test * 100.0, f1_s_test * 100.0
 
-        print("Epoch {}:".format(epoch),
-              "loss: {:.4f}".format(loss.item()),
-              "loss_v: {:.4f}".format(loss_val.item()),
-              "acc_v: {:.4f}".format(acc_val.item()),
-              "acc_t: {:.4f}".format(acc_test.item()),
-              "auc_roc_t: {:.4f}".format(auc_roc_test.item()),
-              "f1_s_t: {:.4f}".format(f1_s_test.item()),
-              "[dp_t: {:.4f}".format(parity_test),
-              "eo_t: {:.4f}]".format(equality_test),
-              " {}/{:.4f}".format(best_epoch, best_test))
-
         # if loss_val < best_loss:
         #     best_loss = loss_val.item()
         if acc_val > best_acc:
@@ -141,6 +135,17 @@ def main_worker(args, config):
             best_test = acc_test.item()
             best_dp_test = parity_test
             best_eo_test = equality_test
+
+        print("Epoch {}:".format(epoch),
+              "loss: {:.4f}".format(loss.item()),
+              "loss_v: {:.4f}".format(loss_val.item()),
+              "acc_v: {:.4f}".format(acc_val.item()),
+              "acc_t: {:.4f}".format(acc_test.item()),
+              "auc_roc_t: {:.4f}".format(auc_roc_test.item()),
+              "f1_s_t: {:.4f}".format(f1_s_test.item()),
+              "[dp_t: {:.4f}".format(parity_test),
+              "eo_t: {:.4f}]".format(equality_test),
+              " {}/{:.4f}".format(best_epoch, best_test))
 
     print("Test results:",
           "acc_v: {:.4f}".format(best_acc),
