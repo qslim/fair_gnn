@@ -11,14 +11,7 @@ import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results
 
 
-def main_worker(args, config):
-    print(args, config)
-    seed_everything(args.seed)
-    # device = 'cuda:{}'.format(args.cuda)
-    # torch.cuda.set_device(args.cuda)
-
-    E, U = e.detach().clone(), u.detach().clone()
-
+def fit_sens(E, U):
     net_sens = Specformer(1,
                           x.size(1),
                           config['nlayer'],
@@ -35,6 +28,7 @@ def main_worker(args, config):
 
     best_acc = 0.0
     best_epoch = -1
+    best_test = 0.0
     for epoch in range(config['epoch']):
         net_sens.train()
         optimizer.zero_grad()
@@ -53,16 +47,21 @@ def main_worker(args, config):
 
         if acc_val > best_acc:
             best_epoch = epoch
-            best_acc = acc_val
-            best_test = acc_test
+            best_acc = acc_val.item()
+            best_test = acc_test.item()
 
-        # print("Stage 1 Epoch {}:".format(epoch),
-        #       "acc_test= {:.4f}".format(acc_test.item()),
-        #       "acc_val: {:.4f}".format(acc_val.item()),
-        #       "best_acc: {}/{:.4f}".format(best_epoch, best_test))
-    print("Test results:",
-          "acc_test= {:.4f}".format(best_test.item()),
-          "acc_val: {:.4f}".format(best_acc.item()))
+    return output_sens, best_test, best_acc, best_epoch
+
+
+def main_worker(args, config):
+    print(args, config)
+    seed_everything(args.seed)
+    # device = 'cuda:{}'.format(args.cuda)
+    # torch.cuda.set_device(args.cuda)
+
+    E, U = e.detach().clone(), u.detach().clone()
+
+    output_sens, sens_acc_test, sens_acc_val, sens_epoch = fit_sens(E, U)
 
     net = Specformer(1,
                      x.size(1),
@@ -85,7 +84,6 @@ def main_worker(args, config):
     # output_sens[idx_sens_train] = sens[idx_sens_train]
 
     _sens_gt = torch.max(torch.abs(output_sens))
-    assert (torch.equal(torch.abs(sens - 0.5) * 2.0, torch.ones_like(sens)))
     _sens = torch.where(sens == 1.0, _sens_gt, -_sens_gt)
     output_sens[idx_sens_train] = _sens[idx_sens_train]
 
@@ -148,13 +146,15 @@ def main_worker(args, config):
               " {}/{:.4f}".format(best_epoch, best_test))
 
     print("Test results:",
-          "acc_v: {:.4f}".format(best_acc),
-          "acc_t= {:.4f}".format(best_test),
+          "[sens_epoch: {}".format(sens_epoch),
+          "sens_acc_v: {:.4f}".format(sens_acc_val),
+          "sens_acc_t= {:.4f}]".format(sens_acc_test),
+          "[acc_t= {:.4f}".format(best_test),
           "auc_roc_t= {:.4f}".format(best_auc_roc_test),
-          "f1_s_t= {:.4f}".format(best_f1_s_test),
+          "f1_s_t= {:.4f}]".format(best_f1_s_test),
           "[dp_t: {:.4f}".format(best_dp_test),
           "eo_t: {:.4f}]".format(best_eo_test))
-    return best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test
+    return best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test, sens_acc_val, sens_acc_test
 
 
 if __name__ == '__main__':
@@ -168,6 +168,8 @@ if __name__ == '__main__':
 
     adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = load_data(path_root='../',
                                                                                    dataset=args.dataset)
+    assert (torch.equal(torch.abs(labels - 0.5) * 2.0, torch.ones_like(labels)))
+    assert (torch.equal(torch.abs(sens - 0.5) * 2.0, torch.ones_like(sens)))
 
 
     e, u = [], []
@@ -192,15 +194,17 @@ if __name__ == '__main__':
 
 
 
-    acc_test, best_auc_roc_test, best_f1_s_test, dp_test, eo_test = [], [], [], [], []
+    acc_test, best_auc_roc_test, best_f1_s_test, dp_test, eo_test, sens_acc_val, sens_acc_test = [], [], [], [], [], [], []
     for seed in args.seeds:
         args.seed = seed
-        _acc_test, _best_auc_roc_test, _best_f1_s_test, _dp_test, _eo_test = main_worker(args, config)
+        _acc_test, _best_auc_roc_test, _best_f1_s_test, _dp_test, _eo_test, _sens_acc_val, _sens_acc_test = main_worker(args, config)
         acc_test.append(_acc_test)
         best_auc_roc_test.append(_best_auc_roc_test)
         best_f1_s_test.append(_best_f1_s_test)
         dp_test.append(_dp_test)
         eo_test.append(_eo_test)
+        sens_acc_val.append(_sens_acc_val)
+        sens_acc_test.append(_sens_acc_test)
 
     acc_test = np.array(acc_test, dtype=float)
     best_auc_roc_test = np.array(best_auc_roc_test, dtype=float)
@@ -208,9 +212,12 @@ if __name__ == '__main__':
     dp_test = np.array(dp_test, dtype=float)
     eo_test = np.array(eo_test, dtype=float)
     print("Mean over {} run:".format(len(args.seeds)),
-          "acc= {:.4f}_{:.4f}".format(np.mean(acc_test), np.std(acc_test)),
+          "[acc= {:.4f}_{:.4f}".format(np.mean(acc_test), np.std(acc_test)),
           "auc_roc= {:.4f}_{:.4f}".format(np.mean(best_auc_roc_test), np.std(best_auc_roc_test)),
-          "f1_s= {:.4f}_{:.4f}".format(np.mean(best_f1_s_test), np.std(best_f1_s_test)),
+          "f1_s= {:.4f}_{:.4f}]".format(np.mean(best_f1_s_test), np.std(best_f1_s_test)),
           "[dp: {:.4f}_{:.4f}".format(np.mean(dp_test), np.std(dp_test)),
-          "eo: {:.4f}_{:.4f}]".format(np.mean(eo_test), np.std(eo_test)))
+          "eo: {:.4f}_{:.4f}]".format(np.mean(eo_test), np.std(eo_test)),
+          "[s_acc_v: {:.4f}_{:.4f}".format(np.mean(sens_acc_val), np.std(sens_acc_val)),
+          "s_acc_t: {:.4f}_{:.4f}]".format(np.mean(sens_acc_test), np.std(sens_acc_test))
+          )
 
