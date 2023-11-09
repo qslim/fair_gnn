@@ -59,3 +59,19 @@ credit:
     decorrelation: 1.0
     orthogonality: 200
     decorrela_dim: 128
+german:
+    nlayer: 2
+    num_heads: 1
+    hidden_dim: 128
+    epoch: 500
+    lr: 0.001
+    weight_decay: 0.00001
+    tran_dropout: 0.5
+    feat_dropout: 0.5
+    prop_dropout: 0.5
+    norm: 'na'
+    eps: [-0.5]
+    eigk: 128
+    decorrelation: 1.0
+    orthogonality: 100
+    decorrela_dim: 128
