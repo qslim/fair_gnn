@@ -39,4 +39,5 @@ credit:
     feat_dropout: 0.5
     norm: 'na'
     decorrelation: 1.0
+    orthogonality: 0.0
     decorrela_dim: 128

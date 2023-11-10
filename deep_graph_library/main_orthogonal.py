@@ -3,25 +3,22 @@ import argparse
 import numpy as np
 import torch
 import torch.nn.functional as F
+import dgl
 import sys
 sys.path.append('..')
-from specformer import Specformer
+from deep_graph_library.models import GCN, GAT
 from data.Preprocessing import load_data
 import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results
 
 
-def fit_sens(E, U):
-    net_sens = Specformer(1,
-                          x.size(1),
-                          config['nlayer'],
-                          config['hidden_dim'],
-                          config['decorrela_dim'],
-                          config['num_heads'],
-                          config['tran_dropout'],
-                          config['feat_dropout'],
-                          config['prop_dropout'],
-                          config['norm']).cuda()
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+def fit_sens(g, x):
+    net_sens = GCN(nfeat=x.size(1), nhid=config['hidden_dim'], nclass=1, dropout=config['feat_dropout']).cuda()
+    # net_sens = GAT(num_layers=2, in_dim=x.size(1), num_hidden=config['hidden_dim'], num_classes=1, heads=1, feat_drop=config['feat_dropout'], attn_drop=config['feat_dropout'], negative_slope=0.2, residual=False).cuda()
+    # net_sens = SGConv(in_feats=x.size(1), out_feats=1, k=2, cached=True, bias=True).cuda()
+
     net_sens.apply(init_params)
     optimizer = torch.optim.Adam(net_sens.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
     print(count_parameters(net_sens))
@@ -32,14 +29,14 @@ def fit_sens(E, U):
     for epoch in range(config['epoch']):
         net_sens.train()
         optimizer.zero_grad()
-        output_sens, _ = net_sens(E, U, x)
+        output_sens, _ = net_sens(g, x)
         loss = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train], sens[idx_sens_train].unsqueeze(1).float())
         acc_train = accuracy(output_sens[idx_sens_train], sens[idx_sens_train])
         loss.backward()
         optimizer.step()
 
         net_sens.eval()
-        output_sens, _ = net_sens(E, U, x)
+        output_sens, _ = net_sens(g, x)
         acc_val = accuracy(output_sens[idx_val], sens[idx_val])
         acc_test = accuracy(output_sens[idx_test], sens[idx_test])
 
@@ -59,10 +56,8 @@ def main_worker(args, config):
     # device = 'cuda:{}'.format(args.cuda)
     # torch.cuda.set_device(args.cuda)
 
-    E, U = e.detach().clone(), u.detach().clone()
-
     if config['orthogonality'] != 0.0:
-        output_sens, sens_acc_test, sens_acc_val, sens_epoch = fit_sens(E, U)
+        output_sens, sens_acc_test, sens_acc_val, sens_epoch = fit_sens(g, x)
 
         output_sens = output_sens.detach()
         output_sens = output_sens.squeeze()
@@ -78,16 +73,9 @@ def main_worker(args, config):
     else:
         output_sens, sens_acc_test, sens_acc_val, sens_epoch = None, -1.0, -1.0, -1
 
-    net = Specformer(1,
-                     x.size(1),
-                     config['nlayer'],
-                     config['hidden_dim'],
-                     config['hidden_dim'],
-                     config['num_heads'],
-                     config['tran_dropout'],
-                     config['feat_dropout'],
-                     config['prop_dropout'],
-                     config['norm']).cuda()
+    net = GCN(nfeat=x.size(1), nhid=config['hidden_dim'], nclass=1, dropout=config['feat_dropout']).cuda()
+    # net = GAT(num_layers=2, in_dim=x.size(1), num_hidden=config['hidden_dim'], num_classes=1, heads=1, feat_drop=config['feat_dropout'], attn_drop=config['feat_dropout'], negative_slope=0.2, residual=False).cuda()
+    # net = SGConv(in_feats=x.size(1), out_feats=1, k=2, cached=True, bias=True).cuda()
     net.apply(init_params)
     optimizer = torch.optim.Adam(net.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
     print(count_parameters(net))
@@ -103,7 +91,7 @@ def main_worker(args, config):
     for epoch in range(config['epoch']):
         net.train()
         optimizer.zero_grad()
-        output, _ = net(E, U, x)
+        output, _ = net(g, x)
 
         if config['orthogonality'] != 0.0:
             # debias linearly
@@ -117,7 +105,7 @@ def main_worker(args, config):
         optimizer.step()
 
         net.eval()
-        output, _ = net(E, U, x)
+        output, _ = net(g, x)
         loss_val = F.binary_cross_entropy_with_logits(output[idx_val], labels[idx_val].unsqueeze(1).float())
         acc_val = accuracy(output[idx_val], labels[idx_val])
         acc_test = accuracy(output[idx_test], labels[idx_test])
@@ -165,7 +153,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', type=int, default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='bail')
+    parser.add_argument('--dataset', default='credit')
     args = parser.parse_args()
 
     config = yaml.load(open('./config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
@@ -175,28 +163,10 @@ if __name__ == '__main__':
     assert (torch.equal(torch.abs(labels - 0.5) * 2.0, torch.ones_like(labels)))
     assert (torch.equal(torch.abs(sens - 0.5) * 2.0, torch.ones_like(sens)))
 
-
-    e, u = [], []
-    deg = np.array(adj.sum(axis=0)).flatten()
-    for eps in config['eps']:
-        print("Start building e, u with {}...".format(eps), end='')
-        # build graph matrix
-        D_ = sp.sparse.diags(deg ** eps)
-        A_ = D_.dot(adj.dot(D_))
-        # L_ = sp.sparse.eye(adj.shape[0]) - A_
-
-        # eigendecomposition
-        if False:
-            _e, _u = np.linalg.eigh(A_.todense())
-            _e, _u = _e[-256:], _u[:, -256:]
-        else:
-            _e, _u = sp.sparse.linalg.eigsh(A_, which='LM', k=config['eigk'], tol=1e-5)
-        e.append(torch.FloatTensor(_e))
-        u.append(torch.FloatTensor(_u))
-        print("Done.")
-    e, u = torch.cat(e, dim=0).cuda(), torch.cat(u, dim=1).cuda()
-
-
+    g = dgl.from_scipy(adj)
+    g = dgl.remove_self_loop(g)
+    g = dgl.add_self_loop(g)
+    g = g.to(torch.device(device))
 
     acc_test, best_auc_roc_test, best_f1_s_test, dp_test, eo_test, sens_acc_val, sens_acc_test = [], [], [], [], [], [], []
     for seed in args.seeds:
