@@ -17,7 +17,7 @@ pokec_z:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
-    epoch: 10000
+    epoch: 500
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.5
@@ -27,6 +27,7 @@ pokec_z:
     eps: [-0.5]
     eigk: 256
     decorrelation: 1.0
+    orthogonality: 10.0
     decorrela_dim: 128
 pokec_n:
     nlayer: 2
