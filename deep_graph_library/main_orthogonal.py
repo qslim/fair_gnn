@@ -160,7 +160,9 @@ if __name__ == '__main__':
 
     adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = load_data(path_root='../',
                                                                                    dataset=args.dataset)
-    assert (torch.equal(torch.abs(labels - 0.5) * 2.0, torch.ones_like(labels)))
+    assert (torch.equal(torch.abs(labels[idx_train] - 0.5) * 2.0, torch.ones_like(labels[idx_train])))
+    assert (torch.equal(torch.abs(labels[idx_val] - 0.5) * 2.0, torch.ones_like(labels[idx_val])))
+    assert (torch.equal(torch.abs(labels[idx_test] - 0.5) * 2.0, torch.ones_like(labels[idx_test])))
     assert (torch.equal(torch.abs(sens - 0.5) * 2.0, torch.ones_like(sens)))
 
     g = dgl.from_scipy(adj)
