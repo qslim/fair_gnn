@@ -264,6 +264,64 @@ def load_german(dataset, sens_attr="Gender", predict_attr="GoodCustomer", path="
    
     return adj, features, labels, idx_train, idx_val, idx_test, sens
 
+
+def load_income(dataset, sens_attr="race", predict_attr="income", path="../dataset/income/", label_number=1000):  # 1000
+    print('Loading {} dataset from {}'.format(dataset, path))
+    idx_features_labels = pd.read_csv(os.path.join(path, "{}.csv".format(dataset)))
+    header = list(idx_features_labels.columns)
+    header.remove(predict_attr)
+
+
+    # sensitive feature removal
+    header.remove('race')
+
+
+    if os.path.exists(f'{path}/{dataset}_edges.txt'):
+        edges_unordered = np.genfromtxt(f'{path}/{dataset}_edges.txt').astype('int')
+    else:
+        edges_unordered = build_relationship(idx_features_labels[header], thresh=0.7)
+        np.savetxt(f'{path}/{dataset}_edges.txt', edges_unordered)
+
+    features = sp.csr_matrix(idx_features_labels[header], dtype=np.float32)
+    labels = idx_features_labels[predict_attr].values
+    idx = np.arange(features.shape[0])
+    idx_map = {j: i for i, j in enumerate(idx)}
+    edges = np.array(list(map(idx_map.get, edges_unordered.flatten())),
+                     dtype=int).reshape(edges_unordered.shape)
+    adj = sp.coo_matrix((np.ones(edges.shape[0]), (edges[:, 0], edges[:, 1])),
+                        shape=(labels.shape[0], labels.shape[0]),
+                        dtype=np.float32)
+
+    adj = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)
+    adj = adj + sp.eye(adj.shape[0])
+
+    features = torch.FloatTensor(np.array(features.todense()))
+    labels = torch.LongTensor(labels)
+
+    import random
+    random.seed(20)
+    label_idx_0 = np.where(labels == 0)[0]
+    label_idx_1 = np.where(labels == 1)[0]
+
+    random.shuffle(label_idx_0)
+    random.shuffle(label_idx_1)
+
+    idx_train = np.append(label_idx_0[:min(int(0.5 * len(label_idx_0)), label_number // 2)],
+                          label_idx_1[:min(int(0.5 * len(label_idx_1)), label_number // 2)])
+    idx_val = np.append(label_idx_0[int(0.5 * len(label_idx_0)):int(0.75 * len(label_idx_0))],
+                        label_idx_1[int(0.5 * len(label_idx_1)):int(0.75 * len(label_idx_1))])
+    idx_test = np.append(label_idx_0[int(0.75 * len(label_idx_0)):], label_idx_1[int(0.75 * len(label_idx_1)):])
+
+    sens = idx_features_labels[sens_attr].values.astype(int)
+    sens = torch.LongTensor(sens)
+    idx_train = torch.LongTensor(idx_train)
+    idx_val = torch.LongTensor(idx_val)
+    idx_test = torch.LongTensor(idx_test)
+
+    return adj, features, labels, idx_train, idx_val, idx_test, sens
+
+
+
 def normalize(mx):
     """Row-normalize sparse matrix"""
     rowsum = np.array(mx.sum(1))

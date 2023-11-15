@@ -1,5 +1,5 @@
 import torch
-from data.utils import load_credit, load_bail, load_german, load_pokec, feature_norm
+from data.utils import load_credit, load_bail, load_german, load_income, load_pokec, feature_norm
 
 # set device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -48,6 +48,20 @@ def load_data(path_root, dataset):
                                                                                 predict_attr, path=path_bail,
                                                                                 label_number=label_number,
                                                                                 )
+        norm_features = feature_norm(features)
+        norm_features[:, sens_idx] = features[:, sens_idx]
+        features = norm_features
+        idx_sens_train = idx_train
+
+    elif dataset == 'income':
+        sens_attr = "race"  # column number after feature process is 1
+        sens_idx = 8
+        predict_attr = 'income'
+        label_number = 3000
+        path_income = path_root + "./dataset/income"
+        adj, features, labels, idx_train, idx_val, idx_test, sens = load_income(dataset, sens_attr,
+                                                                                     predict_attr, path=path_income,
+                                                                                     label_number=label_number)
         norm_features = feature_norm(features)
         norm_features[:, sens_idx] = features[:, sens_idx]
         features = norm_features

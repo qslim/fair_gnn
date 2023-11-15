@@ -9,7 +9,7 @@ from specformer import Specformer
 from data.Preprocessing import load_data
 import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results
-
+# torch.set_printoptions(profile='full')
 
 def fit_sens(E, U):
     net_sens = Specformer(1,
@@ -42,6 +42,12 @@ def fit_sens(E, U):
         output_sens, _ = net_sens(E, U, x)
         acc_val = accuracy(output_sens[idx_val], sens[idx_val])
         acc_test = accuracy(output_sens[idx_test], sens[idx_test])
+
+        # print("Epoch {}:".format(epoch),
+        #       "loss: {:.4f}".format(loss.item()),
+        #       "acc: {:.4f}".format(acc_train.item()),
+        #       "acc_v: {:.4f}".format(acc_val.item()),
+        #       "acc_t: {:.4f}".format(acc_test.item()))
 
         acc_val, acc_test = acc_val * 100.0, acc_test * 100.0
 
@@ -165,7 +171,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', type=int, default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='bail')
+    parser.add_argument('--dataset', default='income')
     args = parser.parse_args()
 
     config = yaml.load(open('./config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
