@@ -107,5 +107,5 @@ income:
     eps: [-0.5]
     eigk: 128
     decorrelation: 1.0
-    orthogonality: 200
+    orthogonality: 100.0
     decorrela_dim: 128
