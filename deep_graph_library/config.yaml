@@ -17,6 +17,7 @@ pokec_z:
     feat_dropout: 0.5
     norm: 'na'
     decorrelation: 1.0
+    orthogonality: 10.0
     decorrela_dim: 128
 pokec_n:
     nlayer: 2
