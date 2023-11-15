@@ -62,9 +62,9 @@ def load_data(path_root, dataset):
         adj, features, labels, idx_train, idx_val, idx_test, sens = load_income(dataset, sens_attr,
                                                                                      predict_attr, path=path_income,
                                                                                      label_number=label_number)
-        norm_features = feature_norm(features)
-        # norm_features[:, sens_idx] = features[:, sens_idx]
-        features = norm_features
+        # norm_features = feature_norm(features)
+        # # norm_features[:, sens_idx] = features[:, sens_idx]
+        # features = norm_features
         idx_sens_train = idx_train
     # elif dataset == 'synthetic':
     #     sens_idx = 0
