@@ -49,7 +49,7 @@ def load_data(path_root, dataset):
                                                                                 label_number=label_number,
                                                                                 )
         norm_features = feature_norm(features)
-        norm_features[:, sens_idx] = features[:, sens_idx]
+        # norm_features[:, sens_idx] = features[:, sens_idx]
         features = norm_features
         idx_sens_train = idx_train
 
@@ -63,7 +63,7 @@ def load_data(path_root, dataset):
                                                                                      predict_attr, path=path_income,
                                                                                      label_number=label_number)
         norm_features = feature_norm(features)
-        norm_features[:, sens_idx] = features[:, sens_idx]
+        # norm_features[:, sens_idx] = features[:, sens_idx]
         features = norm_features
         idx_sens_train = idx_train
     # elif dataset == 'synthetic':
