@@ -60,6 +60,7 @@ credit:
     eigk: 128
     decorrelation: 1.0
     orthogonality: 200
+    kl_div: 1.20
     decorrela_dim: 128
 german:
     nlayer: 2
