@@ -108,4 +108,5 @@ income:
     eigk: 128
     decorrelation: 1.0
     orthogonality: 100.0
+    kl_div: 10.0
     decorrela_dim: 128
