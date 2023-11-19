@@ -69,21 +69,28 @@ def get_sens_idx(idx, sens):
     return sens_idx_0, sens_idx_1
 
 
-def fair_metric_threshold(output, idx, labels, sens, threshold0, threshold1):
-    # val_y = labels[idx].cpu().numpy()
-    # idx_s0 = sens.cpu().numpy()[idx.cpu().numpy()] == 0
-    # idx_s1 = sens.cpu().numpy()[idx.cpu().numpy()] == 1
-    # idx_s0_y1 = np.bitwise_and(idx_s0, val_y == 1)
-    # idx_s1_y1 = np.bitwise_and(idx_s1, val_y == 1)
-
+def fair_metric_threshold_dp(output, idx, labels, sens, threshold0, threshold1):
     sens_idx_0, sens_idx_1 = get_sens_idx(idx, sens)
 
     pred_y_0 = (output[sens_idx_0].squeeze() > threshold0).type_as(labels).cpu().numpy()
     pred_y_1 = (output[sens_idx_1].squeeze() > threshold1).type_as(labels).cpu().numpy()
-    parity = abs(sum(pred_y_0) / sens_idx_0.shape[0] - sum(pred_y_1) / sens_idx_1.shape[0])
-    # equality = abs(sum(pred_y_0[idx_s0_y1]) / sum(idx_s0_y1) - sum(pred_y_1[idx_s1_y1]) / sum(idx_s1_y1))
 
-    return parity, -1
+    parity = abs(sum(pred_y_0) / sens_idx_0.shape[0] - sum(pred_y_1) / sens_idx_1.shape[0])
+
+    return parity
+
+
+def fair_metric_threshold_eo(output, idx, labels, sens, threshold0, threshold1):
+    sens_idx_0, sens_idx_1 = get_sens_idx(idx, sens)
+    _, sens0_label1_idx = get_sens_idx(sens_idx_0, labels)
+    _, sens1_label1_idx = get_sens_idx(sens_idx_1, labels)
+
+    sens0_label1_pred = (output[sens0_label1_idx].squeeze() > threshold0).type_as(labels).cpu().numpy()
+    sens1_label1_pred = (output[sens1_label1_idx].squeeze() > threshold1).type_as(labels).cpu().numpy()
+
+    equality = abs(sum(sens0_label1_pred) / sens0_label1_idx.shape[0] - sum(sens1_label1_pred) / sens1_label1_idx.shape[0])
+
+    return equality
 
 
 def accuracy_threshold(output, idx, labels, sens, threshold0, threshold1):

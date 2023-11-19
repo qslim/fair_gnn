@@ -8,14 +8,17 @@ sys.path.append('..')
 from specformer import Specformer
 from data.Preprocessing import load_data
 import scipy as sp
-from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results, get_sens_idx, fair_metric_threshold, accuracy_threshold
+from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results, get_sens_idx, fair_metric_threshold_dp, fair_metric_threshold_eo, accuracy_threshold
 torch.set_printoptions(profile='full')
 
 
-def threshold_shfit(output):
+def threshold_shfit(output, is_eo=False):
     # output = torch.sigmoid(output.squeeze())
     output = output.squeeze()
     sens_idx_0, sens_idx_1 = get_sens_idx(idx_sens_train, sens)
+    if is_eo:
+        _, sens_idx_0 = get_sens_idx(sens_idx_0, labels)
+        _, sens_idx_1 = get_sens_idx(sens_idx_1, labels)
     sens_sorted_0, _ = output[sens_idx_0].sort()
     sens_sorted_1, _ = output[sens_idx_1].sort()
     print('Sens size: {}, {}'.format(sens_sorted_0.shape[0], sens_sorted_1.shape[0]))
@@ -113,16 +116,22 @@ def main_worker(args, config):
               "eo_t: {:.4f}]".format(equality_test),
               " {}/{:.4f}".format(best_epoch, best_test))
 
-    threshold_sens0, threshold_sens1 = threshold_shfit(best_output)
-    print('threshold_sens0: {}'.format(threshold_sens0))
-    print('threshold_sens1: {}'.format(threshold_sens1))
-
-    parity_test_before, equality_test_before = fair_metric_threshold(best_output, idx_test, labels, sens, 0.0, 0.0)
-    parity_test_after, equality_test_after   = fair_metric_threshold(best_output, idx_test, labels, sens, threshold_sens0, threshold_sens1)
+    dp_threshold_sens0, dp_threshold_sens1 = threshold_shfit(best_output, is_eo=False)
+    print('dp_threshold_sens0: {}'.format(dp_threshold_sens0))
+    print('dp_threshold_sens1: {}'.format(dp_threshold_sens1))
+    parity_test_before = fair_metric_threshold_dp(best_output, idx_test, labels, sens, 0.0, 0.0)
+    parity_test_after   = fair_metric_threshold_dp(best_output, idx_test, labels, sens, dp_threshold_sens0, dp_threshold_sens1)
     print('DP_test: {:.4f} -> {:.4f}'.format(parity_test_before * 100.0, parity_test_after * 100.0))
 
+    # eo_threshold_sens0, eo_threshold_sens1 = threshold_shfit(best_output, is_eo=True)
+    # print('eo_threshold_sens0: {}'.format(eo_threshold_sens0))
+    # print('eo_threshold_sens1: {}'.format(eo_threshold_sens1))
+    # equality_test_before = fair_metric_threshold_eo(best_output, idx_test, labels, sens, 0.0, 0.0)
+    # equality_test_after   = fair_metric_threshold_eo(best_output, idx_test, labels, sens, eo_threshold_sens0, eo_threshold_sens1)
+    # print('EO_test: {:.4f} -> {:.4f}'.format(equality_test_before * 100.0, equality_test_after * 100.0))
+
     acc_before = accuracy_threshold(best_output, idx_test, labels, sens, 0.0, 0.0).item()
-    acc_after  = accuracy_threshold(best_output, idx_test, labels, sens, threshold_sens0, threshold_sens1).item()
+    acc_after  = accuracy_threshold(best_output, idx_test, labels, sens, dp_threshold_sens0, dp_threshold_sens1).item()
     print('Acc_test: {:.4f} -> {:.4f}'.format(acc_before * 100.0, acc_after * 100.0))
 
     print("Test results:",
