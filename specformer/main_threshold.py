@@ -8,8 +8,33 @@ sys.path.append('..')
 from specformer import Specformer
 from data.Preprocessing import load_data
 import scipy as sp
-from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results, sens_type_idx, fair_metric_threshold, accuracy_threshold
+from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results, get_sens_idx, fair_metric_threshold, accuracy_threshold
 torch.set_printoptions(profile='full')
+
+
+def threshold_shfit(output):
+    # output = torch.sigmoid(output.squeeze())
+    output = output.squeeze()
+    sens_idx_0, sens_idx_1 = get_sens_idx(idx_sens_train, sens)
+    sens_sorted_0, _ = output[sens_idx_0].sort()
+    sens_sorted_1, _ = output[sens_idx_1].sort()
+    print('Sens size: {}, {}'.format(sens_sorted_0.shape[0], sens_sorted_1.shape[0]))
+    _threshold_sens0, _threshold_sens1 = -1, -1
+    for i in range(sens_sorted_0.shape[0]):
+        if sens_sorted_0[i] >= 0.0:
+            _threshold_sens0 = i / sens_sorted_0.shape[0]
+            print('Sens0 size: {}, {:.6f}'.format(i, _threshold_sens0))
+            break
+    for i in range(sens_sorted_1.shape[0]):
+        if sens_sorted_1[i] >= 0.0:
+            _threshold_sens1 = i / sens_sorted_1.shape[0]
+            print('Sens1 size: {}, {:.6f}'.format(i, _threshold_sens1))
+            break
+    _threshold_sens = (_threshold_sens0 + _threshold_sens1) / 2.0
+    print('Sens proportion: {:.6f}'.format(_threshold_sens))
+    threshold_sens0, threshold_sens1 = sens_sorted_0[int(sens_sorted_0.shape[0] * _threshold_sens)].item(), sens_sorted_1[int(sens_sorted_1.shape[0] * _threshold_sens)].item()
+
+    return threshold_sens0, threshold_sens1
 
 
 def main_worker(args, config):
@@ -88,48 +113,25 @@ def main_worker(args, config):
               "eo_t: {:.4f}]".format(equality_test),
               " {}/{:.4f}".format(best_epoch, best_test))
 
-    # confidence = torch.sigmoid(best_output.squeeze())
-    confidence = best_output.squeeze()
-    sens_idx_0, sens_idx_1 = sens_type_idx(idx_sens_train, sens)
-    # print('sens_idx_0:', sens_idx_0)
-    # print('sens_idx_1:', sens_idx_1)
-    confidence_sens0, _ = confidence[sens_idx_0].sort()
-    confidence_sens1, _ = confidence[sens_idx_1].sort()
-    # print('confidence_sens0:', confidence_sens0)
-    # print('confidence_sens1:', confidence_sens1)
-    print('Length: {}, {}'.format(confidence_sens0.shape[0], confidence_sens1.shape[0]))
-    _threshold0, _threshold1 = -1, -1
-    for i in range(confidence_sens0.shape[0]):
-        if confidence_sens0[i] >= 0.0:
-            _threshold0 = i / confidence_sens0.shape[0]
-            print('_threshold0:', i, _threshold0)
-            break
-    for i in range(confidence_sens1.shape[0]):
-        if confidence_sens1[i] >= 0.0:
-            _threshold1 = i / confidence_sens1.shape[0]
-            print('_threshold1:', i, _threshold1)
-            break
-    _threshold = (_threshold0 + _threshold1) / 2.0
-    print('_threshold:', _threshold)
-    threshold0, threshold1 = confidence_sens0[int(confidence_sens0.shape[0] * _threshold)].item(), confidence_sens1[int(confidence_sens1.shape[0] * _threshold)].item()
-    print('threshold0:', threshold0)
-    print('threshold1:', threshold1)
+    threshold_sens0, threshold_sens1 = threshold_shfit(best_output)
+    print('threshold_sens0: {}'.format(threshold_sens0))
+    print('threshold_sens1: {}'.format(threshold_sens1))
 
-    parity_test_before, equality_test_before = fair_metric_threshold(confidence, idx_test, labels, sens, 0.0, 0.0)
-    parity_test_after, equality_test_after   = fair_metric_threshold(confidence, idx_test, labels, sens, threshold0, threshold1)
-    print('Fai: {:.4f} -> {:.4f}'.format(parity_test_before * 100.0, parity_test_after * 100.0))
+    parity_test_before, equality_test_before = fair_metric_threshold(best_output, idx_test, labels, sens, 0.0, 0.0)
+    parity_test_after, equality_test_after   = fair_metric_threshold(best_output, idx_test, labels, sens, threshold_sens0, threshold_sens1)
+    print('DP_test: {:.4f} -> {:.4f}'.format(parity_test_before * 100.0, parity_test_after * 100.0))
 
-    acc_before = accuracy_threshold(best_output, idx_test, labels, sens, 0.0, 0.0).item() * 100.0
-    acc_after = accuracy_threshold(best_output, idx_test, labels, sens, threshold0, threshold1).item() * 100.0
-    print('Acc: {:.4f} -> {:.4f}'.format(acc_before, acc_after))
+    acc_before = accuracy_threshold(best_output, idx_test, labels, sens, 0.0, 0.0).item()
+    acc_after  = accuracy_threshold(best_output, idx_test, labels, sens, threshold_sens0, threshold_sens1).item()
+    print('Acc_test: {:.4f} -> {:.4f}'.format(acc_before * 100.0, acc_after * 100.0))
 
     print("Test results:",
-          "[acc_t= {:.4f}".format(best_test),
+          "[acc_t= {:.4f}".format(acc_after),
           "auc_roc_t= {:.4f}".format(best_auc_roc_test),
           "f1_s_t= {:.4f}]".format(best_f1_s_test),
-          "[dp_t: {:.4f}".format(best_dp_test),
+          "[dp_t: {:.4f}".format(parity_test_after),
           "eo_t: {:.4f}]".format(best_eo_test))
-    return best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test
+    return acc_after, best_auc_roc_test, best_f1_s_test, parity_test_after, best_eo_test
 
 
 if __name__ == '__main__':

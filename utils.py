@@ -59,13 +59,11 @@ def fair_metric(output, idx, labels, sens):
     return parity, equality
 
 
-def sens_type_idx(idx_sens_train, sens):
+def get_sens_idx(idx, sens):
     sens_idx_0 = np.where(sens.cpu() == 0)[0]
     sens_idx_1 = np.where(sens.cpu() == 1)[0]
-    sens_idx_0 = np.asarray(list(set(idx_sens_train.cpu().numpy()) & set(sens_idx_0)))
-    sens_idx_1 = np.asarray(list(set(idx_sens_train.cpu().numpy()) & set(sens_idx_1)))
-    # print(sens_idx_0)
-    # print(sens_idx_1)
+    sens_idx_0 = np.asarray(list(set(idx.cpu().numpy()) & set(sens_idx_0)))
+    sens_idx_1 = np.asarray(list(set(idx.cpu().numpy()) & set(sens_idx_1)))
     sens_idx_0 = torch.LongTensor(sens_idx_0)
     sens_idx_1 = torch.LongTensor(sens_idx_1)
     return sens_idx_0, sens_idx_1
@@ -73,22 +71,16 @@ def sens_type_idx(idx_sens_train, sens):
 
 def fair_metric_threshold(output, idx, labels, sens, threshold0, threshold1):
     # val_y = labels[idx].cpu().numpy()
-    idx_s0 = sens.cpu().numpy()[idx.cpu().numpy()] == 0
-    idx_s1 = sens.cpu().numpy()[idx.cpu().numpy()] == 1
-
+    # idx_s0 = sens.cpu().numpy()[idx.cpu().numpy()] == 0
+    # idx_s1 = sens.cpu().numpy()[idx.cpu().numpy()] == 1
     # idx_s0_y1 = np.bitwise_and(idx_s0, val_y == 1)
     # idx_s1_y1 = np.bitwise_and(idx_s1, val_y == 1)
 
-    sens_idx_0 = np.where(sens.cpu() == 0)[0]
-    sens_idx_1 = np.where(sens.cpu() == 1)[0]
-    sens_idx_0 = np.asarray(list(set(idx.cpu().numpy()) & set(sens_idx_0)))
-    sens_idx_1 = np.asarray(list(set(idx.cpu().numpy()) & set(sens_idx_1)))
-    sens_idx_0 = torch.LongTensor(sens_idx_0)
-    sens_idx_1 = torch.LongTensor(sens_idx_1)
+    sens_idx_0, sens_idx_1 = get_sens_idx(idx, sens)
 
     pred_y_0 = (output[sens_idx_0].squeeze() > threshold0).type_as(labels).cpu().numpy()
     pred_y_1 = (output[sens_idx_1].squeeze() > threshold1).type_as(labels).cpu().numpy()
-    parity = abs(sum(pred_y_0) / sum(idx_s0) - sum(pred_y_1) / sum(idx_s1))
+    parity = abs(sum(pred_y_0) / sens_idx_0.shape[0] - sum(pred_y_1) / sens_idx_1.shape[0])
     # equality = abs(sum(pred_y_0[idx_s0_y1]) / sum(idx_s0_y1) - sum(pred_y_1[idx_s1_y1]) / sum(idx_s1_y1))
 
     return parity, -1
@@ -97,24 +89,13 @@ def fair_metric_threshold(output, idx, labels, sens, threshold0, threshold1):
 def accuracy_threshold(output, idx, labels, sens, threshold0, threshold1):
     output = output.squeeze()
 
-    sens_idx_0 = np.where(sens.cpu() == 0)[0]
-    sens_idx_1 = np.where(sens.cpu() == 1)[0]
-    sens_idx_0 = np.asarray(list(set(idx.cpu().numpy()) & set(sens_idx_0)))
-    sens_idx_1 = np.asarray(list(set(idx.cpu().numpy()) & set(sens_idx_1)))
-    sens_idx_0 = torch.LongTensor(sens_idx_0)
-    sens_idx_1 = torch.LongTensor(sens_idx_1)
+    sens_idx_0, sens_idx_1 = get_sens_idx(idx, sens)
 
     preds_0 = (output[sens_idx_0] > threshold0).type_as(labels)
     correct_0 = preds_0.eq(labels[sens_idx_0]).double()
 
     preds_1 = (output[sens_idx_1] > threshold1).type_as(labels)
     correct_1 = preds_1.eq(labels[sens_idx_1]).double()
-
-    # print('preds_0:', preds_0)
-    # print('preds_1:', preds_1)
-    #
-    # print('correct_0:', correct_0, sens_idx_0.shape[0])
-    # print('correct_1:', correct_1, sens_idx_1.shape[0])
 
     correct = correct_0.sum() + correct_1.sum()
 
