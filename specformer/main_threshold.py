@@ -12,10 +12,10 @@ from utils import seed_everything, init_params, count_parameters, accuracy, fair
 torch.set_printoptions(profile='full')
 
 
-def threshold_shfit(output, is_eo=False):
+def threshold_shfit(output, idx, is_eo=False):
     # output = torch.sigmoid(output.squeeze())
     output = output.squeeze()
-    sens_idx_0, sens_idx_1 = get_sens_idx(idx_sens_train, sens)
+    sens_idx_0, sens_idx_1 = get_sens_idx(idx, sens)
     if is_eo:
         _, sens_idx_0 = get_sens_idx(sens_idx_0, labels)
         _, sens_idx_1 = get_sens_idx(sens_idx_1, labels)
@@ -116,7 +116,8 @@ def main_worker(args, config):
               "eo_t: {:.4f}]".format(equality_test),
               " {}/{:.4f}".format(best_epoch, best_test))
 
-    dp_threshold_sens0, dp_threshold_sens1 = threshold_shfit(best_output, is_eo=False)
+    # dp_threshold_sens0, dp_threshold_sens1 = threshold_shfit(best_output, idx_sens_train, is_eo=False)
+    dp_threshold_sens0, dp_threshold_sens1 = threshold_shfit(best_output, idx_test, is_eo=False)
     print('dp_threshold_sens0: {}'.format(dp_threshold_sens0))
     print('dp_threshold_sens1: {}'.format(dp_threshold_sens1))
     parity_test_before = fair_metric_threshold_dp(best_output, idx_test, labels, sens, 0.0, 0.0)
@@ -140,7 +141,7 @@ def main_worker(args, config):
           "f1_s_t= {:.4f}]".format(best_f1_s_test),
           "[dp_t: {:.4f}".format(parity_test_after),
           "eo_t: {:.4f}]".format(best_eo_test))
-    return acc_after, best_auc_roc_test, best_f1_s_test, parity_test_after, best_eo_test
+    return acc_before * 100.0, acc_after * 100.0, parity_test_before * 100.0, parity_test_after * 100.0, 0.0
 
 
 if __name__ == '__main__':
@@ -196,10 +197,7 @@ if __name__ == '__main__':
     dp_test = np.array(dp_test, dtype=float)
     eo_test = np.array(eo_test, dtype=float)
     print("Mean over {} run:".format(len(args.seeds)),
-          "[acc= {:.4f}_{:.4f}".format(np.mean(acc_test), np.std(acc_test)),
-          "auc_roc= {:.4f}_{:.4f}".format(np.mean(best_auc_roc_test), np.std(best_auc_roc_test)),
-          "f1_s= {:.4f}_{:.4f}]".format(np.mean(best_f1_s_test), np.std(best_f1_s_test)),
-          "[dp: {:.4f}_{:.4f}".format(np.mean(dp_test), np.std(dp_test)),
-          "eo: {:.4f}_{:.4f}]".format(np.mean(eo_test), np.std(eo_test))
+          "Acc: {:.4f}_{:.4f} -> {:.4f}_{:.4f}".format(np.mean(acc_test), np.std(acc_test), np.mean(best_auc_roc_test), np.std(best_auc_roc_test)),
+          "DP= {:.4f}_{:.4f} -> {:.4f}_{:.4f}".format(np.mean(best_f1_s_test), np.std(best_f1_s_test), np.mean(dp_test), np.std(dp_test))
           )
 
