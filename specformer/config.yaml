@@ -68,7 +68,8 @@ german:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
-    epoch: 500
+    epoch_1: 500
+    epoch_2: 500
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.5
@@ -78,7 +79,7 @@ german:
     eps: [-0.5]
     eigk: 128
     decorrelation: 1.0
-    orthogonality: 100
+    orthogonality: 200.0
     kl_div: 2.0
     decorrela_dim: 128
 bail:
