@@ -73,7 +73,7 @@ def main_worker(args, config):
         # kl_div = F.kl_div(F.logsigmoid(output_g), F.sigmoid(output_sens_g), reduction="batchmean")
         # # kl_div = F.kl_div(F.logsigmoid(output), F.sigmoid(output_sens), reduction="batchmean")
 
-        if epoch >= 500:
+        if epoch >= 1000:
             # debias linearly
             output = output.squeeze()
             output_mean = output.mean()
@@ -109,7 +109,7 @@ def main_worker(args, config):
 
         # if loss_val < best_loss:
         #     best_loss = loss_val.item()
-        if epoch > 505 and acc_val > best_acc:
+        if epoch > 1005 and acc_val > best_acc:
             best_acc = acc_val.item()
             best_epoch = epoch
             best_auc_roc_test = auc_roc_test.item()
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', type=int, default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='credit')
+    parser.add_argument('--dataset', default='pokec_z')
     args = parser.parse_args()
 
     config = yaml.load(open('./config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
