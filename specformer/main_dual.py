@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import sys
 sys.path.append('..')
-from specformer_dual import Specformer
+from specformer_dual2 import Specformer_wrapper
 from data.Preprocessing import load_data
 from data.fairgraph_dataset2 import POKEC, NBA
 import scipy as sp
@@ -20,16 +20,15 @@ def main_worker(args, config):
 
     E, U = e.detach().clone(), u.detach().clone()
 
-    net = Specformer(nclass=1,
-                     nfeat=x.size(1),
-                     nlayer=config['nlayer'],
-                     hidden_dim=config['hidden_dim'],
-                     signal_dim=config['decorrela_dim'],
-                     nheads=config['num_heads'],
-                     tran_dropout=config['tran_dropout'],
-                     feat_dropout=config['feat_dropout'],
-                     prop_dropout=config['prop_dropout'],
-                     norm=config['norm']).cuda()
+    net = Specformer_wrapper(nclass=1,
+                             nfeat=x.size(1),
+                             nlayer=config['nlayer'],
+                             hidden_dim=config['hidden_dim'],
+                             signal_dim=config['decorrela_dim'],
+                             nheads=config['num_heads'],
+                             tran_dropout=config['tran_dropout'],
+                             feat_dropout=config['feat_dropout'],
+                             prop_dropout=config['prop_dropout']).cuda()
     net.apply(init_params)
     optimizer = torch.optim.Adam(net.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
     print(count_parameters(net))
@@ -43,30 +42,41 @@ def main_worker(args, config):
     best_dp_test = 1e5
     best_eo_test = 1e5
     sens_acc_test, sens_acc_val = -1.0, -1.0
-    for epoch in range(config['epoch']):
+    for epoch in range(config['epoch_1'] + config['epoch_2']):
         net.train()
         optimizer.zero_grad()
 
-        output, _, output_sens, _ = net(E, U, x)
+        output, output_sens = net(E, U, x)
 
-        kl_div = F.mse_loss(torch.sigmoid(output), torch.sigmoid(output_sens))
-        # kl_div = F.cosine_similarity((eigen - eigen.mean()).squeeze().unsqueeze(0), (eigen_sens - eigen_sens.mean()).squeeze().unsqueeze(0)).abs()
+        # kl_div = F.mse_loss(torch.sigmoid(output), torch.sigmoid(output_sens))
 
         # output_g, output_sens_g = torch.cat((output, -output), dim=1), torch.cat((output_sens, -output_sens), dim=1)
         # kl_div = F.kl_div(F.logsigmoid(output_g), F.sigmoid(output_sens_g), reduction="batchmean")
         # # kl_div = F.kl_div(F.logsigmoid(output), F.sigmoid(output_sens), reduction="batchmean")
 
+        # cov = torch.tensor(0.0)
+        if epoch >= config['epoch_1']:
+            # y_score, s_score = torch.sigmoid(output), torch.sigmoid(output_sens)
+            # cov = torch.abs(torch.mean((s_score - torch.mean(s_score)) * (y_score - torch.mean(y_score))))
+
+            # debias linearly
+            output = output.squeeze()
+            output_mean = output.mean()
+            _output_sens = output_sens.squeeze()
+            _output_sens = _output_sens - _output_sens.mean()
+            output = ((output - output_mean) - config['orthogonality'] * ((output - output_mean) * _output_sens).sum() / (_output_sens.pow(2).sum() + 1e-8) * _output_sens + output_mean).unsqueeze(-1)
 
         loss_sens = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train],
                                                   sens[idx_sens_train].unsqueeze(1).float())
         loss_cls = F.binary_cross_entropy_with_logits(output[idx_train], labels[idx_train].unsqueeze(1).float())
-        loss = loss_cls + loss_sens - config['kl_div'] * kl_div
+        loss = loss_cls + loss_sens
+        # loss = loss_cls + loss_sens + config['cov'] * cov
         acc_train = accuracy(output[idx_train], labels[idx_train])
         loss.backward()
         optimizer.step()
 
         net.eval()
-        output, _, output_sens, _ = net(E, U, x)
+        output, output_sens = net(E, U, x)
         acc_val_sens = accuracy(output_sens[idx_val], sens[idx_val])
         acc_test_sens = accuracy(output_sens[idx_test], sens[idx_test])
         acc_val_sens, acc_test_sens = acc_val_sens * 100.0, acc_test_sens * 100.0
@@ -80,10 +90,10 @@ def main_worker(args, config):
         acc_val, acc_test, parity_test, equality_test = acc_val * 100.0, acc_test * 100.0, parity_test * 100.0, equality_test * 100.0
         auc_roc_test, f1_s_test = auc_roc_test * 100.0, f1_s_test * 100.0
 
-        if loss_val < best_loss:
-            best_loss = loss_val.item()
-        # if acc_val > best_acc:
-        #     best_acc = acc_val.item()
+        # if loss_val < best_loss:
+        #     best_loss = loss_val.item()
+        if epoch > config['epoch_1'] + 5 and acc_val > best_acc:
+            best_acc = acc_val.item()
             best_epoch = epoch
             best_auc_roc_test = auc_roc_test.item()
             best_f1_s_test = f1_s_test.item()
@@ -92,7 +102,7 @@ def main_worker(args, config):
             best_eo_test = equality_test
 
         print("Epoch {}:".format(epoch),
-              "kl_div: {:.4f}".format(kl_div.item()),
+              # "cov: {:.4f}".format(cov.item()),
               "loss: {:.4f}".format(loss.item()),
               "loss_v: {:.4f}".format(loss_val.item()),
               "acc_v: {:.4f}".format(acc_val.item()),
