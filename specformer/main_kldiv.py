@@ -73,7 +73,11 @@ def main_worker(args, config):
         # kl_div = F.kl_div(F.logsigmoid(output_g), F.sigmoid(output_sens_g), reduction="batchmean")
         # # kl_div = F.kl_div(F.logsigmoid(output), F.sigmoid(output_sens), reduction="batchmean")
 
+        # cov = torch.tensor(0.0)
         if epoch >= 1000:
+            # y_score, s_score = torch.sigmoid(output), torch.sigmoid(output_sens)
+            # cov = torch.abs(torch.mean((s_score - torch.mean(s_score)) * (y_score - torch.mean(y_score))))
+
             # debias linearly
             output = output.squeeze()
             output_mean = output.mean()
@@ -85,6 +89,7 @@ def main_worker(args, config):
                                                   sens[idx_sens_train].unsqueeze(1).float())
         loss_cls = F.binary_cross_entropy_with_logits(output[idx_train], labels[idx_train].unsqueeze(1).float())
         loss = loss_cls + loss_sens
+        # loss = loss_cls + loss_sens + config['cov'] * cov
         acc_train = accuracy(output[idx_train], labels[idx_train])
         loss.backward()
         optimizer_sens.step()
@@ -119,7 +124,7 @@ def main_worker(args, config):
             best_eo_test = equality_test
 
         print("Epoch {}:".format(epoch),
-              # "kl_div: {:.4f}".format(cov.item()),
+              # "cov: {:.4f}".format(cov.item()),
               "loss: {:.4f}".format(loss.item()),
               "loss_v: {:.4f}".format(loss_val.item()),
               "acc_v: {:.4f}".format(acc_val.item()),
