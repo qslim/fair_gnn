@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import sys
 sys.path.append('..')
-from specformer_dual2 import Specformer_wrapper
+from specformer_dual import Specformer_wrapper
 from data.Preprocessing import load_data
 from data.fairgraph_dataset2 import POKEC, NBA
 import scipy as sp
