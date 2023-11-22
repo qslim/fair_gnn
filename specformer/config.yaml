@@ -14,11 +14,11 @@ nba:
     decorrelation: 0.0
     decorrela_dim: 64
 pokec_z:
-    nlayer: 2
+    nlayer: 3
     num_heads: 1
     hidden_dim: 128
-    epoch_1: 1000
-    epoch_2: 1000
+    epoch_1: 500
+    epoch_2: 500
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.5
