@@ -13,6 +13,7 @@ nba:
     eigk: 128
     decorrelation: 0.0
     decorrela_dim: 64
+    patience: 5
 pokec_z:
     nlayer: 3
     num_heads: 1
@@ -30,6 +31,7 @@ pokec_z:
     decorrelation: 1.0
     orthogonality: 10.0
     decorrela_dim: 128
+    patience: 5
 pokec_n:
     nlayer: 2
     num_heads: 1
@@ -46,6 +48,7 @@ pokec_n:
     decorrelation: 10.0
     orthogonality: 10.0
     decorrela_dim: 128
+    patience: 5
 credit:
     nlayer: 2
     num_heads: 1
@@ -62,8 +65,8 @@ credit:
     eigk: 128
     decorrelation: 1.0
     orthogonality: 500.0
-    kl_div: 1.20
     decorrela_dim: 128
+    patience: 5
 german:
     nlayer: 2
     num_heads: 1
@@ -80,8 +83,8 @@ german:
     eigk: 128
     decorrelation: 1.0
     orthogonality: 200.0
-    kl_div: 2.0
     decorrela_dim: 128
+    patience: 5
 bail:
     nlayer: 3
     num_heads: 1
@@ -98,6 +101,7 @@ bail:
     decorrelation: 1.0
     orthogonality: 10.0
     decorrela_dim: 128
+    patience: 5
 income:
     nlayer: 2
     num_heads: 1
@@ -114,5 +118,5 @@ income:
     eigk: 64
     decorrelation: 1.0
     orthogonality: 100.0
-    kl_div: 10.0
     decorrela_dim: 128
+    patience: 5
