@@ -110,9 +110,11 @@ class Specformer(nn.Module):
 
         filter = self.filter(e)
 
+        uf = u * filter.permute(1, 0)
+
         for conv in self.layers:
             utx = ut @ h
-            y = u @ (filter * utx)
+            y = uf @ utx
             h = h + y
             h = conv(h)
 
@@ -132,25 +134,19 @@ class Specformer_wrapper(nn.Module):
         self.feat_dp1_s = nn.Dropout(feat_dropout)
         self.linear_encoder_s = nn.Linear(nfeat, hidden_dim)
 
+        self.filter_y = Filter(hidden_dim=hidden_dim, nheads=nheads, tran_dropout=tran_dropout)
+        self.filter_s = Filter(hidden_dim=hidden_dim, nheads=nheads, tran_dropout=tran_dropout)
         if shd_filter:
-            self.filter_y = Filter(hidden_dim=hidden_dim, nheads=nheads, tran_dropout=tran_dropout)
             self.filter_s = self.filter_y
-        else:
-            self.filter_y = Filter(hidden_dim=hidden_dim, nheads=nheads, tran_dropout=tran_dropout)
-            self.filter_s = Filter(hidden_dim=hidden_dim, nheads=nheads, tran_dropout=tran_dropout)
 
+        layers = [SpecLayer(hidden_dim, hidden_dim, prop_dropout) for i in range(nlayer - 1)]
+        layers.append(SpecLayer(hidden_dim, signal_dim, prop_dropout))
+        self.layers_y = nn.ModuleList(layers)
+        layers = [SpecLayer(hidden_dim, hidden_dim, prop_dropout) for i in range(nlayer - 1)]
+        layers.append(SpecLayer(hidden_dim, signal_dim, prop_dropout))
+        self.layers_s = nn.ModuleList(layers)
         if shd_trans:
-            layers = [SpecLayer(hidden_dim, hidden_dim, prop_dropout) for i in range(nlayer - 1)]
-            layers.append(SpecLayer(hidden_dim, signal_dim, prop_dropout))
-            self.layers_y = nn.ModuleList(layers)
             self.layers_s = self.layers_y
-        else:
-            layers = [SpecLayer(hidden_dim, hidden_dim, prop_dropout) for i in range(nlayer - 1)]
-            layers.append(SpecLayer(hidden_dim, signal_dim, prop_dropout))
-            self.layers_y = nn.ModuleList(layers)
-            layers = [SpecLayer(hidden_dim, hidden_dim, prop_dropout) for i in range(nlayer - 1)]
-            layers.append(SpecLayer(hidden_dim, signal_dim, prop_dropout))
-            self.layers_s = nn.ModuleList(layers)
 
         self.feat_dp2_y = nn.Dropout(feat_dropout)
         self.feat_dp2_s = nn.Dropout(feat_dropout)
