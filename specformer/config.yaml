@@ -103,7 +103,7 @@ bail:
     decorrela_dim: 128
     patience: 5
 income:
-    nlayer: 2
+    nlayer: 3
     num_heads: 1
     hidden_dim: 64
     epoch_1: 500
