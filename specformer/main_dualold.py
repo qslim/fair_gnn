@@ -30,10 +30,6 @@ def main_worker(args, config):
                           config['feat_dropout'],
                           config['prop_dropout'],
                           config['norm']).cuda()
-    net_sens.apply(init_params)
-    optimizer_sens = torch.optim.Adam(net_sens.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
-    print(count_parameters(net_sens))
-
 
     net = Specformer(1,
                      x.size(1),
@@ -45,8 +41,12 @@ def main_worker(args, config):
                      config['feat_dropout'],
                      config['prop_dropout'],
                      config['norm']).cuda()
+
+    net_sens.apply(init_params)
     net.apply(init_params)
-    optimizer = torch.optim.Adam(net.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
+    params = list(net_sens.parameters()) + list(net.parameters())
+    optimizer = torch.optim.Adam(params, lr=config['lr'], weight_decay=config['weight_decay'])
+    print(count_parameters(net_sens))
     print(count_parameters(net))
 
     best_acc = 0.0
@@ -61,7 +61,6 @@ def main_worker(args, config):
     for epoch in range(config['epoch_1'] + config['epoch_2']):
         net_sens.train()
         net.train()
-        optimizer_sens.zero_grad()
         optimizer.zero_grad()
 
         output_sens, _ = net_sens(E, U, x)
@@ -92,7 +91,6 @@ def main_worker(args, config):
         # loss = loss_cls + loss_sens + config['cov'] * cov
         acc_train = accuracy(output[idx_train], labels[idx_train])
         loss.backward()
-        optimizer_sens.step()
         optimizer.step()
 
         net_sens.eval()
