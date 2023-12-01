@@ -151,8 +151,10 @@ class Specformer_wrapper(nn.Module):
                                        prop_dropout)
 
         if shd_filter:
+            print('Applying shd_filter...')
             self.specformer_s.filter = self.specformer_y.filter
         if shd_trans:
+            print('Applying shd_trans...')
             self.specformer_s.layers = self.specformer_y.layers
 
     def forward(self, e, u, x):

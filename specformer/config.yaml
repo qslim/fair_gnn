@@ -32,6 +32,8 @@ pokec_z:
     orthogonality: 10.0
     decorrela_dim: 128
     patience: 5
+    shd_filter: 'F'
+    shd_trans: 'F'
 pokec_n:
     nlayer: 2
     num_heads: 1
