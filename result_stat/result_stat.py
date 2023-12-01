@@ -7,7 +7,7 @@ input_file_path = 'pokec_z.csv'
 with open(input_file_path, 'r', newline='') as input_csv:
     csv_reader = csv.reader(input_csv)
 
-    csv_reader = sorted(csv_reader, key=lambda row: row[4])
+    csv_reader = sorted(csv_reader, key=lambda row: row[5])
 
     # Transpose the CSV data
     transposed_data = list(zip(*csv_reader))
@@ -23,4 +23,5 @@ print('&' + ' &'.join(transposed_data[0]) + ' \\'+'\\')
 print('&' + ' &'.join(transposed_data[1]) + ' \\'+'\\')
 print('&' + ' &'.join(transposed_data[2]) + ' \\'+'\\')
 print('&' + ' &'.join(transposed_data[3]) + ' \\'+'\\')
+print('&' + ' &'.join(transposed_data[4]) + ' \\'+'\\')
 # print('&' + ' &'.join(transposed_data[4]))
