@@ -33,6 +33,27 @@ class GCN_Body(nn.Module):
         return x    
 
 
+class GCN_wrapper(nn.Module):
+    def __init__(self, nclass, nfeat, hidden_dim=128, feat_dropout=0.0):
+        super(GCN_wrapper, self).__init__()
+
+        self.gnn_s = GCN(nfeat=nfeat,
+                         nhid=hidden_dim,
+                         nclass=1,
+                         dropout=feat_dropout)
+
+        self.gnn_y = GCN(nfeat=nfeat,
+                         nhid=hidden_dim,
+                         nclass=1,
+                         dropout=feat_dropout)
+
+    def forward(self, g, x):
+        pred_s = self.gnn_s(g, x)
+        pred_y = self.gnn_y(g, x)
+
+        return pred_y, pred_s
+
+
 class GAT_body(nn.Module):
     def __init__(self,
                  num_layers,
