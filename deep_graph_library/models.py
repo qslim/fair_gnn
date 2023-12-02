@@ -48,8 +48,8 @@ class GCN_wrapper(nn.Module):
                          dropout=feat_dropout)
 
     def forward(self, g, x):
-        pred_s = self.gnn_s(g, x)
-        pred_y = self.gnn_y(g, x)
+        pred_s, _ = self.gnn_s(g, x)
+        pred_y, _ = self.gnn_y(g, x)
 
         return pred_y, pred_s
 
