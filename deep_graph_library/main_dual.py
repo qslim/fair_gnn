@@ -49,14 +49,14 @@ def main_worker(config):
     best_test = 0.0
     best_dp_test = 1e5
     best_eo_test = 1e5
-    for epoch in range(config['epoch_1'] + config['epoch_2']):
+    for epoch in range(config['epoch_fit'] + config['epoch_debias']):
         net.train()
         optimizer.zero_grad()
 
         output, output_sens = net(g, x)
 
         # cov = torch.tensor(0.0)
-        if epoch >= config['epoch_1']:
+        if epoch >= config['epoch_fit']:
             output = signal_debias(output, output_sens)
 
         loss_sens = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train],
@@ -85,7 +85,7 @@ def main_worker(config):
 
         # if loss_val < best_loss:
         #     best_loss = loss_val.item()
-        if epoch > config['epoch_1'] + config['patience'] and acc_val > best_acc:
+        if epoch > config['epoch_fit'] + config['patience'] and acc_val > best_acc:
             best_acc = acc_val.item()
             best_epoch = epoch
             best_auc_roc_test = auc_roc_test.item()

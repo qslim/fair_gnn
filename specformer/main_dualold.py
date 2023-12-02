@@ -58,7 +58,7 @@ def main_worker(args, config):
     best_dp_test = 1e5
     best_eo_test = 1e5
     sens_acc_test, sens_acc_val = -1.0, -1.0
-    for epoch in range(config['epoch_1'] + config['epoch_2']):
+    for epoch in range(config['epoch_fit'] + config['epoch_debias']):
         net_sens.train()
         net.train()
         optimizer.zero_grad()
@@ -73,7 +73,7 @@ def main_worker(args, config):
         # # kl_div = F.kl_div(F.logsigmoid(output), F.sigmoid(output_sens), reduction="batchmean")
 
         # cov = torch.tensor(0.0)
-        if epoch >= config['epoch_1']:
+        if epoch >= config['epoch_fit']:
             # y_score, s_score = torch.sigmoid(output), torch.sigmoid(output_sens)
             # cov = torch.abs(torch.mean((s_score - torch.mean(s_score)) * (y_score - torch.mean(y_score))))
 
@@ -112,7 +112,7 @@ def main_worker(args, config):
 
         # if loss_val < best_loss:
         #     best_loss = loss_val.item()
-        if epoch > config['epoch_1'] + 5 and acc_val > best_acc:
+        if epoch > config['epoch_fit'] + 5 and acc_val > best_acc:
             best_acc = acc_val.item()
             best_epoch = epoch
             best_auc_roc_test = auc_roc_test.item()

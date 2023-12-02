@@ -7,11 +7,13 @@ nba:
     weight_decay: 0.00001
     feat_dropout: 0.5
     norm: 'na'
+    patience: 5
 pokec_z:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
-    epoch: 500
+    epoch_fit: 500
+    epoch_debias: 500
     lr: 0.001
     weight_decay: 0.00001
     feat_dropout: 0.5
@@ -19,11 +21,13 @@ pokec_z:
     decorrelation: 1.0
     orthogonality: 10.0
     decorrela_dim: 128
+    patience: 5
 pokec_n:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
-    epoch: 500
+    epoch_fit: 500
+    epoch_debias: 500
     lr: 0.001
     weight_decay: 0.00001
     feat_dropout: 0.5
@@ -31,11 +35,13 @@ pokec_n:
     decorrelation: 1.0
     orthogonality: 10.0
     decorrela_dim: 128
+    patience: 5
 credit:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
-    epoch: 500
+    epoch_fit: 500
+    epoch_debias: 500
     lr: 0.001
     weight_decay: 0.00001
     feat_dropout: 0.5
@@ -43,11 +49,13 @@ credit:
     decorrelation: 1.0
     orthogonality: 0.0
     decorrela_dim: 128
+    patience: 5
 german:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
-    epoch: 500
+    epoch_fit: 500
+    epoch_debias: 500
     lr: 0.001
     weight_decay: 0.00001
     feat_dropout: 0.5
@@ -55,11 +63,13 @@ german:
     decorrelation: 1.0
     orthogonality: 100.0
     decorrela_dim: 128
+    patience: 5
 income:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
-    epoch: 500
+    epoch_fit: 500
+    epoch_debias: 500
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.5
@@ -67,7 +77,7 @@ income:
     prop_dropout: 0.5
     norm: 'na'
     eps: [-0.5]
-    eigk: 128
     decorrelation: 1.0
     orthogonality: 200
     decorrela_dim: 128
+    patience: 5

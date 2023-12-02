@@ -26,7 +26,7 @@ def fit_sens(g, x):
     best_acc = 0.0
     best_epoch = -1
     best_test = 0.0
-    for epoch in range(config['epoch']):
+    for epoch in range(config['epoch_fit']):
         net_sens.train()
         optimizer.zero_grad()
         output_sens, _ = net_sens(g, x)
@@ -88,7 +88,7 @@ def main_worker(args, config):
     best_test = 0.0
     best_dp_test = 1e5
     best_eo_test = 1e5
-    for epoch in range(config['epoch']):
+    for epoch in range(config['epoch_fit']):
         net.train()
         optimizer.zero_grad()
         output, _ = net(g, x)
