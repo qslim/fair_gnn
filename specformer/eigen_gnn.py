@@ -9,11 +9,10 @@ from torch.nn.init import xavier_uniform_, xavier_normal_, constant_
 
 
 class SineEncoding(nn.Module):
-    def __init__(self, hidden_dim=128):
+    def __init__(self, num_basis):
         super(SineEncoding, self).__init__()
-        self.constant = 2
-        self.hidden_dim = hidden_dim
-        self.eig_w = nn.Linear(30, hidden_dim)
+        self.constant = 2.0
+        self.num_basis = num_basis
 
     def forward(self, e):
         # input:  [N]
@@ -21,14 +20,16 @@ class SineEncoding(nn.Module):
 
         assert (len(e.shape) == 1)
         e = e * self.constant
-        padding = torch.ones_like(e)
-        eig_sign = torch.where(e >= 0, padding, padding * -1)
-        eig_val_nosign = e.abs()
-        eig_val_nosign = torch.where(eig_val_nosign > 1e-6, eig_val_nosign, torch.zeros_like(eig_val_nosign))  # Precision limitation
-        eig_val_smoothed = eig_val_nosign.pow(0.1) * eig_sign
-        eeig = torch.vander(eig_val_smoothed, N=30, increasing=True)
+        # padding = torch.ones_like(e)
+        # eig_sign = torch.where(e >= 0, padding, padding * -1)
+        # eig_val_nosign = e.abs()
+        # eig_val_nosign = torch.where(eig_val_nosign > 1e-6, eig_val_nosign, torch.zeros_like(eig_val_nosign))  # Precision limitation
+        # eig_val_smoothed = eig_val_nosign.pow(3.0 / self.num_basis) * eig_sign
+        # eig_val_smoothed = e.pow(4.0 / self.num_basis)
+        eig_val_smoothed = e.abs().pow(4.0 / self.num_basis) * (e / e.abs())
+        eeig = torch.vander(eig_val_smoothed, N=self.num_basis, increasing=True)
 
-        return self.eig_w(eeig)
+        return eeig
 
 
 class FeedForwardNetwork(nn.Module):
@@ -37,9 +38,12 @@ class FeedForwardNetwork(nn.Module):
         super(FeedForwardNetwork, self).__init__()
         self.ffn = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
-            # nn.LayerNorm(hidden_dim),
+            nn.LayerNorm(hidden_dim),
+            # nn.BatchNorm1d(hidden_dim),
             nn.GELU(),
             nn.Linear(hidden_dim, output_dim),
+            nn.LayerNorm(hidden_dim),
+            # nn.GELU(),
         )
 
     def forward(self, x):
@@ -55,6 +59,7 @@ class SpecLayer(nn.Module):
         self.ffn = nn.Sequential(
             nn.Linear(hidden_dim, signal_dim),
             nn.LayerNorm(signal_dim),
+            # nn.BatchNorm1d(signal_dim),
             nn.GELU()
             # nn.ELU()
             # nn.ReLU()
@@ -70,27 +75,23 @@ class Filter(nn.Module):
     def __init__(self, hidden_dim=128, nheads=1,
                  tran_dropout=0.0):
         super(Filter, self).__init__()
+        num_basis = hidden_dim
 
-        self.eig_encoder = SineEncoding(hidden_dim)
-        self.decoder = nn.Linear(hidden_dim, 1)
-
-        self.mha_norm = nn.LayerNorm(hidden_dim)
-        self.ffn_norm = nn.LayerNorm(hidden_dim)
-        self.mha_dropout = nn.Dropout(tran_dropout)
+        self.eig_encoder = SineEncoding(num_basis=num_basis)
         self.ffn_dropout = nn.Dropout(tran_dropout)
-        self.mha = nn.MultiheadAttention(hidden_dim, nheads, tran_dropout)
-        self.ffn = FeedForwardNetwork(hidden_dim, hidden_dim, hidden_dim)
+        self.ffn = FeedForwardNetwork(num_basis, hidden_dim, hidden_dim)
+        self.decoder_dropout = nn.Dropout(tran_dropout)
+        self.decoder = nn.Linear(hidden_dim, 1)
 
     def forward(self, e):
         eig = self.eig_encoder(e)  # [N, d]
-        mha_eig = self.mha_norm(eig)
-        mha_eig, attn = self.mha(mha_eig, mha_eig, mha_eig)
-        eig = eig + self.mha_dropout(mha_eig)
-        ffn_eig = self.ffn_norm(eig)
-        ffn_eig = self.ffn(ffn_eig)
-        eig = eig + self.ffn_dropout(ffn_eig)
-        new_e = self.decoder(eig)  # [N, m]
-        return new_e
+        eig = self.ffn_dropout(eig)
+        ffn_eig = self.ffn(eig)
+        # eig = eig + ffn_eig
+        eig = ffn_eig
+        eig = self.decoder_dropout(eig)
+        eig = self.decoder(eig)  # [N, m]
+        return eig
 
 
 class Specformer(nn.Module):

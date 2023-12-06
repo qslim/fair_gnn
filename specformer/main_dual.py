@@ -5,8 +5,8 @@ import torch
 import torch.nn.functional as F
 import sys
 sys.path.append('..')
-from specformer_dual import Specformer_wrapper
-# from eigen_gnn import Specformer_wrapper
+# from specformer_dual import Specformer_wrapper
+from eigen_gnn import Specformer_wrapper
 from data.Preprocessing import load_data
 from data.fairgraph_dataset2 import POKEC, NBA
 import scipy as sp
@@ -132,7 +132,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='pokec_z')
+    parser.add_argument('--dataset', default='credit')
     parser.add_argument('--rank', type=int, default=0, help="result stat")
     args = parser.parse_args()
 
@@ -155,7 +155,7 @@ if __name__ == '__main__':
         # build graph matrix
         D_ = sp.sparse.diags(deg ** eps)
         A_ = D_.dot(adj.dot(D_))
-        # L_ = sp.sparse.eye(adj.shape[0]) - A_
+        # A_ = sp.sparse.eye(adj.shape[0]) - A_
 
         # eigendecomposition
         if False:
