@@ -86,7 +86,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='credit')
+    parser.add_argument('--dataset', default='pokec_z')
     parser.add_argument('--rank', type=int, default=0, help="result stat")
     args = parser.parse_args()
 
@@ -116,7 +116,7 @@ if __name__ == '__main__':
             _e, _u = np.linalg.eigh(A_.todense())
             _e, _u = _e[-256:], _u[:, -256:]
         else:
-            _e, _u = sp.sparse.linalg.eigsh(A_, which='LM', k=config['eigk'], tol=1e-5)
+            _e, _u = sp.sparse.linalg.eigsh(A_, which=config['eig_which'], k=config['eig_k'], tol=1e-5)
         e.append(torch.FloatTensor(_e))
         u.append(torch.FloatTensor(_u))
         print("Done.")

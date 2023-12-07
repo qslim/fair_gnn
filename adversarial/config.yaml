@@ -9,7 +9,8 @@ nba:
     feat_dropout: 0.5
     prop_dropout: 0.5
     eps: [-0.2]
-    eigk: 128
+    eig_which: 'LM'
+    eig_k: 128
     decorrela_dim: 64
     adver: 0.0
 pokec_z:
@@ -23,7 +24,8 @@ pokec_z:
     feat_dropout: 0.5
     prop_dropout: 0.5
     eps: [-0.5]
-    eigk: 256
+    eig_which: 'LM'
+    eig_k: 256
     decorrela_dim: 128
     adver: 0.0
 pokec_n:
@@ -37,7 +39,8 @@ pokec_n:
     feat_dropout: 0.6
     prop_dropout: 0.6
     eps: [-0.5]
-    eigk: 256
+    eig_which: 'LM'
+    eig_k: 256
     decorrela_dim: 128
     adver: 0.0
 credit:
@@ -51,7 +54,8 @@ credit:
     feat_dropout: 0.5
     prop_dropout: 0.5
     eps: [-0.5]
-    eigk: 128
+    eig_which: 'LM'
+    eig_k: 128
     decorrela_dim: 128
     adver: 0.0
 german:
@@ -65,7 +69,8 @@ german:
     feat_dropout: 0.5
     prop_dropout: 0.5
     eps: [-0.5]
-    eigk: 128
+    eig_which: 'LM'
+    eig_k: 128
     decorrela_dim: 128
     adver: 0.0
 bail:
@@ -79,7 +84,8 @@ bail:
     feat_dropout: 0.5
     prop_dropout: 0.5
     eps: [-0.5]
-    eigk: 256
+    eig_which: 'LM'
+    eig_k: 256
     decorrela_dim: 128
     adver: 0.0
 income:
@@ -93,6 +99,7 @@ income:
     feat_dropout: 0.5
     prop_dropout: 0.5
     eps: [-0.5]
-    eigk: 64
+    eig_which: 'LM'
+    eig_k: 64
     decorrela_dim: 128
     adver: 0.0
