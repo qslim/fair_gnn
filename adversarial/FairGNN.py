@@ -30,6 +30,8 @@ class FairGNN(nn.Module):
         #                     eig_k=config['eig_k'],
         #                     feat_dropout=config['feat_dropout'],
         #                     prop_dropout=config['prop_dropout'])
+
+        # self.feat_dp2 = nn.Dropout(config['feat_dropout'])
         self.classifier = nn.Sequential(
             nn.Linear(nhid, nhid),
             # nn.LayerNorm(hidden_dim),
@@ -50,8 +52,9 @@ class FairGNN(nn.Module):
         self.G_loss = 0
         self.A_loss = 0
 
-    def forward(self,e,u,x):
+    def evaluate(self,e,u,x):
         z = self.GNN(e,u,x)
+        # z = self.feat_dp2(z)
         y = self.classifier(z)
         return y
     
@@ -62,6 +65,7 @@ class FairGNN(nn.Module):
         self.optimizer_G.zero_grad()
 
         h = self.GNN(e,u,x)
+        # h = self.feat_dp2(h)
         y = self.classifier(h)
 
         s_g = self.adv(h)

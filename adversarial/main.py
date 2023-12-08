@@ -40,7 +40,7 @@ def main_worker(config):
         group_confusion = net.group_confusion
 
         net.eval()
-        output = net(E, U, x)
+        output = net.evaluate(E, U, x)
 
         acc_val = accuracy(output[idx_val], labels[idx_val]) * 100.0
         auc_roc_val, f1_s_val, _ = evaluation_results(output, labels, idx_val)
