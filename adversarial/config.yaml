@@ -13,6 +13,8 @@ nba:
     eig_k: 128
     decorrela_dim: 64
     adver: 0.0
+    init_mean: 0.0
+    init_std: 0.01
 pokec_z:
     nlayer: 3
     num_heads: 1
@@ -28,6 +30,8 @@ pokec_z:
     eig_k: 256
     decorrela_dim: 128
     adver: 0.0
+    init_mean: 0.0
+    init_std: 0.01
 pokec_n:
     nlayer: 2
     num_heads: 1
@@ -43,6 +47,8 @@ pokec_n:
     eig_k: 256
     decorrela_dim: 128
     adver: 0.0
+    init_mean: 0.0
+    init_std: 0.01
 credit:
     nlayer: 2
     num_heads: 1
@@ -58,6 +64,8 @@ credit:
     eig_k: 128
     decorrela_dim: 128
     adver: 0.0
+    init_mean: 0.0
+    init_std: 0.01
 german:
     nlayer: 2
     num_heads: 1
@@ -73,6 +81,8 @@ german:
     eig_k: 128
     decorrela_dim: 128
     adver: 0.0
+    init_mean: 0.0
+    init_std: 0.01
 bail:
     nlayer: 3
     num_heads: 1
@@ -88,6 +98,8 @@ bail:
     eig_k: 256
     decorrela_dim: 128
     adver: 0.0
+    init_mean: 0.0
+    init_std: 0.01
 income:
     nlayer: 3
     num_heads: 1
@@ -103,3 +115,5 @@ income:
     eig_k: 64
     decorrela_dim: 128
     adver: 0.0
+    init_mean: 1.0
+    init_std: 0.1

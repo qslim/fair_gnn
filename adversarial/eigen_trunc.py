@@ -30,20 +30,19 @@ class SpecLayer(nn.Module):
 
 class EigenTrunc(nn.Module):
 
-    def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, signal_dim=128, nheads=1, eig_k=-1,
-                 feat_dropout=0.0, prop_dropout=0.0):
+    def __init__(self, nclass, nfeat, config):
         super(EigenTrunc, self).__init__()
 
-        self.linear_encoder = nn.Linear(nfeat, hidden_dim)
+        self.linear_encoder = nn.Linear(nfeat, config['hidden_dim'])
         # self.classify = nn.Linear(signal_dim, nclass)
 
-        self.filter = nn.Parameter(torch.empty((eig_k, 1)))
-        nn.init.normal_(self.filter, mean=0.0, std=0.01)
+        self.filter = nn.Parameter(torch.empty((config['eig_k'], 1)))
+        nn.init.normal_(self.filter, mean=config['init_mean'], std=config['init_std'])
 
-        self.feat_dp1 = nn.Dropout(feat_dropout)
-        self.feat_dp2 = nn.Dropout(feat_dropout)
-        layers = [SpecLayer(hidden_dim, hidden_dim, prop_dropout) for i in range(nlayer - 1)]
-        layers.append(SpecLayer(hidden_dim, signal_dim, prop_dropout))
+        self.feat_dp1 = nn.Dropout(config['feat_dropout'])
+        self.feat_dp2 = nn.Dropout(config['feat_dropout'])
+        layers = [SpecLayer(config['hidden_dim'], config['hidden_dim'], config['prop_dropout']) for i in range(config['nlayer'] - 1)]
+        layers.append(SpecLayer(config['hidden_dim'], config['hidden_dim'], config['prop_dropout']))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, e, u, x):

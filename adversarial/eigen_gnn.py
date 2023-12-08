@@ -69,19 +69,18 @@ class Filter(nn.Module):
 
 class EigenGNN(nn.Module):
 
-    def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, signal_dim=128, nheads=1,
-                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0):
+    def __init__(self, nclass, nfeat, config):
         super(EigenGNN, self).__init__()
 
-        self.linear_encoder = nn.Linear(nfeat, hidden_dim)
+        self.linear_encoder = nn.Linear(nfeat, config['hidden_dim'])
         # self.classify = nn.Linear(signal_dim, nclass)
 
-        self.filter = Filter(hidden_dim=hidden_dim, nheads=nheads, tran_dropout=tran_dropout)
+        self.filter = Filter(hidden_dim=config['hidden_dim'], nheads=config['num_heads'], tran_dropout=config['tran_dropout'])
 
-        self.feat_dp1 = nn.Dropout(feat_dropout)
-        self.feat_dp2 = nn.Dropout(feat_dropout)
-        layers = [SpecLayer(hidden_dim, hidden_dim, prop_dropout) for i in range(nlayer - 1)]
-        layers.append(SpecLayer(hidden_dim, signal_dim, prop_dropout))
+        self.feat_dp1 = nn.Dropout(config['feat_dropout'])
+        self.feat_dp2 = nn.Dropout(config['feat_dropout'])
+        layers = [SpecLayer(config['hidden_dim'], config['hidden_dim'], config['prop_dropout']) for i in range(config['nlayer'] - 1)]
+        layers.append(SpecLayer(config['hidden_dim'], config['hidden_dim'], config['prop_dropout']))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, e, u, x):
