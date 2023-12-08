@@ -15,6 +15,8 @@ nba:
     adver: 0.0
     init_mean: 0.0
     init_std: 0.01
+    label_number: 100
+    sens_number: 50
 pokec_z:
     nlayer: 3
     num_heads: 1
@@ -32,6 +34,8 @@ pokec_z:
     adver: 0.0
     init_mean: 0.0
     init_std: 0.01
+    label_number: 500
+    sens_number: 200
 pokec_n:
     nlayer: 2
     num_heads: 1
@@ -49,6 +53,8 @@ pokec_n:
     adver: 0.0
     init_mean: 0.0
     init_std: 0.01
+    label_number: 500
+    sens_number: 200
 credit:
     nlayer: 2
     num_heads: 1
@@ -66,6 +72,8 @@ credit:
     adver: 0.0
     init_mean: 0.0
     init_std: 0.01
+    label_number: 6000
+    sens_number: -1
 german:
     nlayer: 2
     num_heads: 1
@@ -83,6 +91,8 @@ german:
     adver: 0.0
     init_mean: 0.0
     init_std: 0.01
+    label_number: 100
+    sens_number: -1
 bail:
     nlayer: 3
     num_heads: 1
@@ -100,6 +110,8 @@ bail:
     adver: 0.0
     init_mean: 0.0
     init_std: 0.01
+    label_number: 100
+    sens_number: -1
 income:
     nlayer: 3
     num_heads: 1
@@ -117,3 +129,5 @@ income:
     adver: 0.0
     init_mean: 1.0
     init_std: 0.1
+    label_number: 3000
+    sens_number: -1

@@ -360,8 +360,7 @@ def sparse_mx_to_torch_sparse_tensor(sparse_mx):
 
 
 
-def load_pokec(dataset, sens_attr, predict_attr, path="../dataset/pokec/", label_number=1000, sens_number=500, seed=19,
-               test_idx=False):
+def load_pokec(dataset, sens_attr, predict_attr, path="../dataset/pokec/", label_number=1000, sens_number=500, seed=19):
     """Load data"""
     print('Loading {} dataset from {}'.format(dataset, path))
 
@@ -402,11 +401,12 @@ def load_pokec(dataset, sens_attr, predict_attr, path="../dataset/pokec/", label
 
     idx_train = label_idx[:min(int(0.5 * len(label_idx)), label_number)]
     idx_val = label_idx[int(0.5 * len(label_idx)):int(0.75 * len(label_idx))]
-    if test_idx:
-        idx_test = label_idx[label_number:]
-        idx_val = idx_test
-    else:
-        idx_test = label_idx[int(0.75 * len(label_idx)):]
+    # if test_idx:
+    #     idx_test = label_idx[label_number:]
+    #     idx_val = idx_test
+    # else:
+    #     idx_test = label_idx[int(0.75 * len(label_idx)):]
+    idx_test = label_idx[int(0.75 * len(label_idx)):]
 
     sens = idx_features_labels[sens_attr].values
 

@@ -8,13 +8,13 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # print(args.dataset)
 
 
-def load_data(path_root, dataset):
+def load_data(path_root, dataset, label_number, sens_number):
     # Load credit_scoring dataset
     if dataset == 'credit':
         sens_attr = "Age"  # column number after feature process is 1
         sens_idx = 1
         predict_attr = 'NoDefaultNextMonth'
-        label_number = 6000
+        # label_number = 6000
         path_credit = path_root + "./dataset/credit"
         adj, features, labels, idx_train, idx_val, idx_test, sens = load_credit(dataset, sens_attr,
                                                                                 predict_attr, path=path_credit,
@@ -30,7 +30,7 @@ def load_data(path_root, dataset):
         sens_attr = "Gender"  # column number after feature process is 0
         sens_idx = 0
         predict_attr = "GoodCustomer"
-        label_number = 100
+        # label_number = 100
         path_german = path_root + "./dataset/german"
         adj, features, labels, idx_train, idx_val, idx_test, sens = load_german(dataset, sens_attr,
                                                                                 predict_attr, path=path_german,
@@ -42,7 +42,7 @@ def load_data(path_root, dataset):
         sens_attr = "WHITE"  # column number after feature process is 0
         sens_idx = 0
         predict_attr = "RECID"
-        label_number = 100
+        # label_number = 100
         path_bail = path_root + "./dataset/bail"
         adj, features, labels, idx_train, idx_val, idx_test, sens = load_bail(dataset, sens_attr,
                                                                                 predict_attr, path=path_bail,
@@ -57,7 +57,7 @@ def load_data(path_root, dataset):
         sens_attr = "race"  # column number after feature process is 1
         sens_idx = 8
         predict_attr = 'income'
-        label_number = 3000
+        # label_number = 3000
         path_income = path_root + "./dataset/income"
         adj, features, labels, idx_train, idx_val, idx_test, sens = load_income(dataset, sens_attr,
                                                                                      predict_attr, path=path_income,
@@ -81,20 +81,18 @@ def load_data(path_root, dataset):
                 dataset = 'region_job_2'
             sens_attr = "region"
             predict_attr = "I_am_working_in_field"
-            label_number = 500
-            sens_number = 200
+            # label_number = 500
+            # sens_number = 200
             seed = 20
             path = "../dataset/pokec/"
-            test_idx = False
         else:
             dataset = 'nba'
             sens_attr = "country"
             predict_attr = "SALARY"
-            label_number = 100
-            sens_number = 50
+            # label_number = 100
+            # sens_number = 50
             seed = 20
             path = "../dataset/NBA"
-            test_idx = True
 
         adj, features, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = load_pokec(dataset,
                                                                                         sens_attr,
@@ -102,7 +100,7 @@ def load_data(path_root, dataset):
                                                                                         path=path,
                                                                                         label_number=label_number,
                                                                                         sens_number=sens_number,
-                                                                                        seed=seed, test_idx=test_idx)
+                                                                                        seed=seed)
         # x = feature_norm(x)
         labels[labels > 1] = 1
         sens[sens > 0] = 1
@@ -110,7 +108,7 @@ def load_data(path_root, dataset):
     else:
         raise ValueError('Unknown dataset!')
 
-    print("loaded dataset: ", dataset, "num of node: ", len(features), ' feature dim: ', features.shape[1])
+    print("loaded dataset:", dataset, "num_node:", len(features), 'feature_dim:', features.shape[1], 'num_label:', idx_train.shape[0], 'num_sens:', idx_sens_train.shape[0])
 
     # num_class = labels.unique().shape[0]-1
 

@@ -96,7 +96,9 @@ if __name__ == '__main__':
     config['rank'] = args.rank
 
     adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = load_data(path_root='../',
-                                                                                   dataset=config['dataset'])
+                                                                                   dataset=config['dataset'],
+                                                                                   label_number=config['label_number'],
+                                                                                   sens_number=config['sens_number'])
     assert (torch.equal(torch.abs(labels[idx_train] - 0.5) * 2.0, torch.ones_like(labels[idx_train])))
     assert (torch.equal(torch.abs(labels[idx_val] - 0.5) * 2.0, torch.ones_like(labels[idx_val])))
     assert (torch.equal(torch.abs(labels[idx_test] - 0.5) * 2.0, torch.ones_like(labels[idx_test])))
