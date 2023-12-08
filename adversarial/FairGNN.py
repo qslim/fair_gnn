@@ -49,7 +49,7 @@ class FairGNN(nn.Module):
     def optimize(self,e,u,x,labels,idx_train,sens,idx_sens_train):
         self.train()
 
-        self.adv.requires_grad_(False)
+        # self.adv.requires_grad_(False)
         self.optimizer_G.zero_grad()
 
         h = self.GNN(e,u,x)
@@ -69,7 +69,7 @@ class FairGNN(nn.Module):
         self.G_loss.backward()
         self.optimizer_G.step()
 
-        self.adv.requires_grad_(True)
+        # self.adv.requires_grad_(True)
         self.optimizer_A.zero_grad()
         s_g = self.adv(h.detach())
         self.A_loss = self.criterion(s_g[idx_sens_train],sens[idx_sens_train].unsqueeze(1).float())
