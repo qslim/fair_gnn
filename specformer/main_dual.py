@@ -13,7 +13,7 @@ from utils import seed_everything, init_params, count_parameters, accuracy, fair
 from result_stat.result_append import result_append
 
 
-def signal_debias(output, output_sens):
+def orthogonal_projection(output, output_sens):
     # y_score, s_score = torch.sigmoid(output), torch.sigmoid(output_sens)
     # cov = torch.abs(torch.mean((s_score - torch.mean(s_score)) * (y_score - torch.mean(y_score))))
 
@@ -24,6 +24,24 @@ def signal_debias(output, output_sens):
     output = ((output - output_mean) - config['orthogonality'] * ((output - output_mean) * _output_sens).sum() / (
                 _output_sens.pow(2).sum() + 1e-8) * _output_sens + output_mean).unsqueeze(-1)
     return output
+
+
+def multi_scale_decorrelation(output, output_sens):
+    # y_score, s_score = torch.sigmoid(output), torch.sigmoid(output_sens)
+    # ms_cor = torch.abs(torch.mean((output_sens - torch.mean(output_sens)) * (output - torch.mean(output))))
+    ms_cor = 0.0
+    output, output_sens = output.squeeze(), output_sens.squeeze()
+    for p in [0.5, 1.0, 1.5, 2.0]:
+        _output, _output_sens = output.abs().pow(p) * (output / output.abs()), output_sens.abs().pow(p) * (output_sens / output_sens.abs())
+        # _output, _output_sens =output.pow(p), output_sens.pow(p)
+
+        # ms_cor = ms_cor + torch.abs(torch.mean((_output_sens - torch.mean(_output_sens)) * (_output - torch.mean(_output))))
+
+        _output, _output_sens = _output.unsqueeze(0), _output_sens.unsqueeze(0)
+        _output, _output_sens = _output - torch.mean(_output), _output_sens - torch.mean(_output_sens)
+        ms_cor = ms_cor + F.cosine_similarity(_output_sens, _output).abs().squeeze()
+
+    return ms_cor
 
 
 def main_worker(config):
@@ -64,13 +82,15 @@ def main_worker(config):
         output, output_sens = net(E, U, x)
 
         # cov = torch.tensor(0.0)
+        ms_cor = 0.0
         if epoch >= config['epoch_fit']:
-            output = signal_debias(output, output_sens)
+            # output = orthogonal_projection(output, output_sens)
+            ms_cor = multi_scale_decorrelation(output, output_sens)
 
         loss_sens = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train],
                                                   sens[idx_sens_train].unsqueeze(1).float())
         loss_cls = F.binary_cross_entropy_with_logits(output[idx_train], labels[idx_train].unsqueeze(1).float())
-        loss = loss_cls + loss_sens
+        loss = loss_cls + loss_sens + config['ms_decor'] * ms_cor
         # loss = loss_cls + loss_sens + config['cov'] * cov
         acc_train_sens = accuracy(output_sens[idx_train], sens[idx_train]) * 100.0
         acc_train = accuracy(output[idx_train], labels[idx_train]) * 100.0
@@ -116,6 +136,7 @@ def main_worker(config):
               "[Sen-acc tr: {:.4f}".format(acc_train_sens),
               "va: {:.4f}]".format(acc_val_sens),
               "te: {:.4f}]".format(acc_test_sens),
+              "mscor: {:.4f}".format(ms_cor),
               "{}/{:.4f}".format(best_epoch, best_test))
 
     print("Test results:",
@@ -131,7 +152,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='credit')
+    parser.add_argument('--dataset', default='income')
     parser.add_argument('--rank', type=int, default=0, help="result stat")
     args = parser.parse_args()
 
