@@ -8,17 +8,17 @@ sys.path.append('..')
 from specformer import Specformer
 from data.Preprocessing import load_data
 import scipy as sp
-from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results, get_sens_idx, fair_metric_threshold_dp, fair_metric_threshold_eo, accuracy_threshold
+from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results, group_by_attr, fair_metric_threshold_dp, fair_metric_threshold_eo, accuracy_threshold
 torch.set_printoptions(profile='full')
 
 
 def threshold_shfit(output, idx, is_eo=False):
     # output = torch.sigmoid(output.squeeze())
     output = output.squeeze()
-    sens_idx_0, sens_idx_1 = get_sens_idx(idx, sens)
+    sens_idx_0, sens_idx_1 = group_by_attr(idx, sens)
     if is_eo:
-        _, sens_idx_0 = get_sens_idx(sens_idx_0, labels)
-        _, sens_idx_1 = get_sens_idx(sens_idx_1, labels)
+        _, sens_idx_0 = group_by_attr(sens_idx_0, labels)
+        _, sens_idx_1 = group_by_attr(sens_idx_1, labels)
     sens_sorted_0, _ = output[sens_idx_0].sort()
     sens_sorted_1, _ = output[sens_idx_1].sort()
     print('Sens size: {}, {}'.format(sens_sorted_0.shape[0], sens_sorted_1.shape[0]))

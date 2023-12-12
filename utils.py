@@ -59,9 +59,9 @@ def fair_metric(output, idx, labels, sens):
     return parity, equality
 
 
-def get_sens_idx(idx, sens):
-    sens_idx_0 = np.where(sens.cpu() == 0)[0]
-    sens_idx_1 = np.where(sens.cpu() == 1)[0]
+def group_by_attr(idx, attr):
+    sens_idx_0 = np.where(attr.cpu() == 0)[0]
+    sens_idx_1 = np.where(attr.cpu() == 1)[0]
     sens_idx_0 = np.asarray(list(set(idx.cpu().numpy()) & set(sens_idx_0)))
     sens_idx_1 = np.asarray(list(set(idx.cpu().numpy()) & set(sens_idx_1)))
     sens_idx_0 = torch.LongTensor(sens_idx_0)
@@ -70,7 +70,7 @@ def get_sens_idx(idx, sens):
 
 
 def fair_metric_threshold_dp(output, idx, labels, sens, threshold0, threshold1):
-    sens_idx_0, sens_idx_1 = get_sens_idx(idx, sens)
+    sens_idx_0, sens_idx_1 = group_by_attr(idx, sens)
 
     pred_y_0 = (output[sens_idx_0].squeeze() > threshold0).type_as(labels).cpu().numpy()
     pred_y_1 = (output[sens_idx_1].squeeze() > threshold1).type_as(labels).cpu().numpy()
@@ -81,9 +81,9 @@ def fair_metric_threshold_dp(output, idx, labels, sens, threshold0, threshold1):
 
 
 def fair_metric_threshold_eo(output, idx, labels, sens, threshold0, threshold1):
-    sens_idx_0, sens_idx_1 = get_sens_idx(idx, sens)
-    _, sens0_label1_idx = get_sens_idx(sens_idx_0, labels)
-    _, sens1_label1_idx = get_sens_idx(sens_idx_1, labels)
+    sens_idx_0, sens_idx_1 = group_by_attr(idx, sens)
+    _, sens0_label1_idx = group_by_attr(sens_idx_0, labels)
+    _, sens1_label1_idx = group_by_attr(sens_idx_1, labels)
 
     sens0_label1_pred = (output[sens0_label1_idx].squeeze() > threshold0).type_as(labels).cpu().numpy()
     sens1_label1_pred = (output[sens1_label1_idx].squeeze() > threshold1).type_as(labels).cpu().numpy()
@@ -96,7 +96,7 @@ def fair_metric_threshold_eo(output, idx, labels, sens, threshold0, threshold1):
 def accuracy_threshold(output, idx, labels, sens, threshold0, threshold1):
     output = output.squeeze()
 
-    sens_idx_0, sens_idx_1 = get_sens_idx(idx, sens)
+    sens_idx_0, sens_idx_1 = group_by_attr(idx, sens)
 
     preds_0 = (output[sens_idx_0] > threshold0).type_as(labels)
     correct_0 = preds_0.eq(labels[sens_idx_0]).double()
