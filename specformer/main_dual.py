@@ -8,7 +8,6 @@ sys.path.append('..')
 # from specformer_dual import Specformer_wrapper
 from eigen_gnn import Specformer_wrapper
 from data.Preprocessing import load_data
-from data.fairgraph_dataset2 import POKEC, NBA
 import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results
 from result_stat.result_append import result_append
