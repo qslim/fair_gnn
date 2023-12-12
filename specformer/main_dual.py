@@ -5,8 +5,8 @@ import torch
 import torch.nn.functional as F
 import sys
 sys.path.append('..')
-# from specformer_dual import Specformer_wrapper
-from eigen_gnn import Specformer_wrapper
+from specformer_dual import Specformer_wrapper
+# from eigen_gnn import Specformer_wrapper
 from data.Preprocessing import load_data
 import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results
@@ -141,7 +141,9 @@ if __name__ == '__main__':
     config['rank'] = args.rank
 
     adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = load_data(path_root='../',
-                                                                                   dataset=config['dataset'])
+                                                                                   dataset=config['dataset'],
+                                                                                   label_number=config['label_number'],
+                                                                                   sens_number=config['sens_number'])
     assert (torch.equal(torch.abs(labels[idx_train] - 0.5) * 2.0, torch.ones_like(labels[idx_train])))
     assert (torch.equal(torch.abs(labels[idx_val] - 0.5) * 2.0, torch.ones_like(labels[idx_val])))
     assert (torch.equal(torch.abs(labels[idx_test] - 0.5) * 2.0, torch.ones_like(labels[idx_test])))
