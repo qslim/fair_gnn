@@ -90,33 +90,33 @@ def main_worker(config):
         logit_sen1, _ = net_sen1(E, U, x)
         acc_val_sen1 = accuracy(logit_sen1[idx_val], labels[idx_val]) * 100.0
         acc_test_sen1 = accuracy(logit_sen1[idx_test], labels[idx_test]) * 100.0
-        parity_test, equality_test = fair_metric(logit_sen1, idx_test, labels, sens)
-        auc_roc_test, f1_s_test, _ = evaluation_results(logit_sen1, labels, idx_test)
 
+        parity_test, equality_test = fair_metric(logit_sen0, idx_test, labels, sens)
+        auc_roc_test, f1_s_test, _ = evaluation_results(logit_sen0, labels, idx_test)
         parity_test, equality_test = parity_test * 100.0, equality_test * 100.0
         auc_roc_test, f1_s_test = auc_roc_test * 100.0, f1_s_test * 100.0
 
         # if loss_val < best_loss:
         #     best_loss = loss_val.item()
-        if epoch > config['epoch_fit'] + config['patience'] and acc_val_sen1 > best_acc:
-            best_acc = acc_val_sen1.item()
+        if epoch > config['epoch_fit'] + config['patience'] and acc_val_sen0 > best_acc:
+            best_acc = acc_val_sen0.item()
             best_epoch = epoch
             best_auc_roc_test = auc_roc_test.item()
             best_f1_s_test = f1_s_test.item()
-            best_test = acc_test_sen1.item()
+            best_test = acc_test_sen0.item()
             best_dp_test = parity_test
             best_eo_test = equality_test
 
         print("Epoch {}:".format(epoch),
               "Loss tr: {:.4f}".format(loss.item()),
-              "[Acc tr: {:.4f}".format(acc_train_sen1.item()),
+              "[Acc_sen0 tr: {:.4f}".format(acc_train_sen0.item()),
+              "va: {:.4f}".format(acc_val_sen0.item()),
+              "te: {:.4f}]".format(acc_test_sen0.item()),
+              "[Acc_sen1 tr: {:.4f}".format(acc_train_sen1.item()),
               "va: {:.4f}".format(acc_val_sen1.item()),
               "te: {:.4f}]".format(acc_test_sen1.item()),
               "[DP: {:.4f}".format(parity_test),
               "EO: {:.4f}]".format(equality_test),
-              "[Acc_sen0 tr: {:.4f}".format(acc_train_sen0),
-              "va: {:.4f}".format(acc_val_sen0),
-              "te: {:.4f}]".format(acc_test_sen0),
               "ali: {:.4f}".format(group_distance),
               "{}/{:.4f}".format(best_epoch, best_test))
 
@@ -152,6 +152,11 @@ if __name__ == '__main__':
     assert (torch.equal(torch.abs(sens - 0.5) * 2.0, torch.ones_like(sens)))
 
     idx_train_0, idx_train_1 = group_by_attr(idx_train, sens)
+    if idx_train_0.shape[0] < idx_train_1.shape[0]:
+        print("idx_train_0, idx_train_1 swap.")
+        tmp = idx_train_0
+        idx_train_0 = idx_train_1
+        idx_train_1 = tmp
     print("idx_train: {}, idx_train_0: {}, idx_train_1: {}".format(idx_train.shape[0], idx_train_0.shape[0], idx_train_1.shape[0]))
 
     e, u = [], []
