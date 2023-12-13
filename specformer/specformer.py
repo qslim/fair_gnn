@@ -120,3 +120,116 @@ class Specformer(nn.Module):
         y_pred = self.classify(h)
         return y_pred, h
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+class Filter(nn.Module):
+    def __init__(self, hidden_dim=128, nheads=1,
+                 tran_dropout=0.0):
+        super(Filter, self).__init__()
+
+        self.eig_encoder = SineEncoding(hidden_dim)
+        self.decoder = nn.Linear(hidden_dim, 1)
+
+        self.mha_norm = nn.LayerNorm(hidden_dim)
+        self.ffn_norm = nn.LayerNorm(hidden_dim)
+        self.mha_dropout = nn.Dropout(tran_dropout)
+        self.ffn_dropout = nn.Dropout(tran_dropout)
+        self.mha = nn.MultiheadAttention(hidden_dim, nheads, tran_dropout)
+        self.ffn = FeedForwardNetwork(hidden_dim, hidden_dim, hidden_dim)
+
+    def forward(self, e):
+        eig = self.eig_encoder(e)  # [N, d]
+        mha_eig = self.mha_norm(eig)
+        mha_eig, attn = self.mha(mha_eig, mha_eig, mha_eig)
+        eig = eig + self.mha_dropout(mha_eig)
+        ffn_eig = self.ffn_norm(eig)
+        ffn_eig = self.ffn(ffn_eig)
+        eig = eig + self.ffn_dropout(ffn_eig)
+        new_e = self.decoder(eig)  # [N, m]
+        return new_e
+
+
+class Specformer2(nn.Module):
+
+    def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, signal_dim=128, nheads=1,
+                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0):
+        super(Specformer2, self).__init__()
+
+        self.linear_encoder = nn.Linear(nfeat, hidden_dim)
+        self.classify = nn.Linear(signal_dim, nclass)
+
+        self.filter = Filter(hidden_dim=hidden_dim, nheads=nheads, tran_dropout=tran_dropout)
+
+        self.feat_dp1 = nn.Dropout(feat_dropout)
+        self.feat_dp2 = nn.Dropout(feat_dropout)
+        layers = [SpecLayer(hidden_dim, hidden_dim, prop_dropout) for i in range(nlayer - 1)]
+        layers.append(SpecLayer(hidden_dim, signal_dim, prop_dropout))
+        self.layers = nn.ModuleList(layers)
+
+    def forward(self, e, u, x):
+        ut = u.permute(1, 0)
+        h = self.feat_dp1(x)
+        h = self.linear_encoder(h)
+
+        filter = self.filter(e)
+
+        for conv in self.layers:
+            utx = ut @ h
+            y = u @ (filter * utx)
+            h = h + y
+            h = conv(h)
+
+        h = self.feat_dp2(h)
+        pred = self.classify(h)
+
+        return pred
+
+
+class Specformer_wrapper(nn.Module):
+    def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, signal_dim=128, nheads=1,
+                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, shd_filter=False, shd_trans=False):
+        super(Specformer_wrapper, self).__init__()
+
+        self.specformer_s = Specformer2(nclass,
+                                       nfeat,
+                                       nlayer,
+                                       hidden_dim,
+                                       signal_dim,
+                                       nheads,
+                                       tran_dropout,
+                                       feat_dropout,
+                                       prop_dropout)
+
+        self.specformer_y = Specformer2(nclass,
+                                       nfeat,
+                                       nlayer,
+                                       hidden_dim,
+                                       hidden_dim,
+                                       nheads,
+                                       tran_dropout,
+                                       feat_dropout,
+                                       prop_dropout)
+
+        if shd_filter:
+            print('Applying shd_filter...')
+            self.specformer_s.filter = self.specformer_y.filter
+        if shd_trans:
+            print('Applying shd_trans...')
+            self.specformer_s.layers = self.specformer_y.layers
+
+    def forward(self, e, u, x):
+        pred_s = self.specformer_s(e, u, x)
+        pred_y = self.specformer_y(e, u, x)
+
+        return pred_y, pred_s

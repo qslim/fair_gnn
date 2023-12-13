@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import sys
 sys.path.append('..')
-from specformer_dual import Specformer_wrapper
+from specformer import Specformer_wrapper
 # from eigen_gnn import Specformer_wrapper
 from data.Preprocessing import load_data
 import scipy as sp
