@@ -70,7 +70,7 @@ def main_worker(config):
         group_distance = 0.0
         if epoch >= config['epoch_fit']:
             # group_distance = F.cosine_similarity(H_sen0, H_sen1).abs().mean().squeeze()
-            group_distance = linalg.vector_norm(H_sen0 - H_sen1, dim=1).mean()
+            group_distance = linalg.vector_norm(H_sen0 - H_sen1, dim=1).mean() / (torch.std(H_sen0, dim=1).mean() + torch.std(H_sen1, dim=1).mean() + 1e-8)
 
         loss_sen0 = F.binary_cross_entropy_with_logits(logit_sen0[idx_train_0], labels[idx_train_0].unsqueeze(1).float())
         loss_sen1 = F.binary_cross_entropy_with_logits(logit_sen1[idx_train_1], labels[idx_train_1].unsqueeze(1).float())
@@ -117,7 +117,8 @@ def main_worker(config):
               "te: {:.4f}]".format(acc_test_sen1.item()),
               "[DP: {:.4f}".format(parity_test),
               "EO: {:.4f}]".format(equality_test),
-              "ali: {:.4f}".format(group_distance),
+              "ali: {:.4f}".format(linalg.vector_norm(H_sen0 - H_sen1, dim=1).mean()),
+              "std: {:.4f}".format(H_sen0.std(dim=1).mean()),
               "{}/{:.4f}".format(best_epoch, best_test))
 
     print("Test results:",
@@ -133,7 +134,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='income')
+    parser.add_argument('--dataset', default='pokec_z')
     parser.add_argument('--rank', type=int, default=0, help="result stat")
     args = parser.parse_args()
 
