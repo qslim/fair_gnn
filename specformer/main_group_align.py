@@ -69,7 +69,7 @@ def main_worker(config):
         # cov = torch.tensor(0.0)
         group_distance = 0.0
         if epoch >= config['epoch_fit']:
-            # group_distance = F.cosine_similarity(H_sen0, H_sen1).abs().squeeze()
+            # group_distance = F.cosine_similarity(H_sen0, H_sen1).abs().mean().squeeze()
             group_distance = linalg.vector_norm(H_sen0 - H_sen1, dim=1).mean()
 
         loss_sen0 = F.binary_cross_entropy_with_logits(logit_sen0[idx_train_0], labels[idx_train_0].unsqueeze(1).float())
@@ -151,7 +151,15 @@ if __name__ == '__main__':
     assert (torch.equal(torch.abs(labels[idx_test] - 0.5) * 2.0, torch.ones_like(labels[idx_test])))
     assert (torch.equal(torch.abs(sens - 0.5) * 2.0, torch.ones_like(sens)))
 
+    if torch.equal(idx_train, idx_sens_train) is not True:
+        print("idx_train and idx_sens_train are not alignment, crop idx_train.")
+        idx_train = np.asarray(list(set(idx_train.cpu().numpy()) & set(idx_sens_train.cpu().numpy())))
+        idx_train = torch.LongTensor(idx_train)
     idx_train_0, idx_train_1 = group_by_attr(idx_train, sens)
+    import random
+    random.seed(20)
+    random.shuffle(idx_train_0)
+    random.shuffle(idx_train_1)
     if idx_train_0.shape[0] < idx_train_1.shape[0]:
         print("idx_train_0, idx_train_1 swap.")
         tmp = idx_train_0
