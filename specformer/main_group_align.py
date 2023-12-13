@@ -70,7 +70,9 @@ def main_worker(config):
         group_distance = 0.0
         if epoch >= config['epoch_fit']:
             # group_distance = F.cosine_similarity(H_sen0, H_sen1).abs().mean().squeeze()
-            group_distance = linalg.vector_norm(H_sen0 - H_sen1, dim=1).mean() / (torch.std(H_sen0, dim=1).mean() + torch.std(H_sen1, dim=1).mean() + 1e-8)
+            # group_distance = linalg.vector_norm(H_sen0 - H_sen1, dim=1).mean() / (torch.std(H_sen0, dim=1).mean() + torch.std(H_sen1, dim=1).mean() + 1e-8)
+            # group_distance = (linalg.vector_norm(H_sen0 - H_sen1, dim=1) / (torch.std(H_sen0, dim=1) + torch.std(H_sen1, dim=1) + 1e-8)).mean()
+            group_distance = (H_sen0 - H_sen1).abs().mean()
 
         loss_sen0 = F.binary_cross_entropy_with_logits(logit_sen0[idx_train_0], labels[idx_train_0].unsqueeze(1).float())
         loss_sen1 = F.binary_cross_entropy_with_logits(logit_sen1[idx_train_1], labels[idx_train_1].unsqueeze(1).float())
