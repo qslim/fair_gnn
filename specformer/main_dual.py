@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import sys
 sys.path.append('..')
-from specformer import Specformer_wrapperMSD
+from specformer_msd import Specformer_wrapper
 # from eigen_gnn import Specformer_wrapper
 from data.Preprocessing import load_data
 import scipy as sp
@@ -52,7 +52,7 @@ def main_worker(config):
 
     E, U = e.detach().clone(), u.detach().clone()
 
-    net = Specformer_wrapperMSD(nclass=1,
+    net = Specformer_wrapper(nclass=1,
                              nfeat=x.size(1),
                              nlayer=config['nlayer'],
                              hidden_dim=config['hidden_dim'],
