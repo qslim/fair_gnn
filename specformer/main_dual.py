@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import sys
 sys.path.append('..')
-from specformer_msd import Specformer_wrapper
+from specformer import Specformer_wrapper
 # from eigen_gnn import Specformer_wrapper
 from data.Preprocessing import load_data
 import scipy as sp
@@ -31,7 +31,7 @@ def multi_scale_decorrelation(output, output_sens):
     # ms_cor = torch.abs(torch.mean((output_sens - torch.mean(output_sens)) * (output - torch.mean(output))))
     ms_cor = 0.0
     output, output_sens = output.squeeze(), output_sens.squeeze()
-    for p in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0]:
+    for p in config['ms_bank']:
         _output, _output_sens = output.abs().pow(p) * (output / output.abs()), output_sens.abs().pow(p) * (output_sens / output_sens.abs())
         # _output, _output_sens =output.pow(p), output_sens.pow(p)
 
@@ -44,7 +44,7 @@ def multi_scale_decorrelation(output, output_sens):
     return ms_cor
 
 
-def main_worker(config):
+def main_worker():
     print(config)
     seed_everything(config['seed'])
     # device = 'cuda:{}'.format(config['cuda'])
@@ -193,7 +193,7 @@ if __name__ == '__main__':
     acc_test, best_auc_roc_test, best_f1_s_test, dp_test, eo_test = [], [], [], [], []
     for seed in config['seeds']:
         config['seed'] = seed
-        _acc_test, _best_auc_roc_test, _best_f1_s_test, _dp_test, _eo_test = main_worker(config)
+        _acc_test, _best_auc_roc_test, _best_f1_s_test, _dp_test, _eo_test = main_worker()
         acc_test.append(_acc_test)
         best_auc_roc_test.append(_best_auc_roc_test)
         best_f1_s_test.append(_best_f1_s_test)
