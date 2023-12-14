@@ -6,11 +6,73 @@ import torch.nn.functional as F
 from torch import linalg
 import sys
 sys.path.append('..')
-from specformer import Specformer
+from specformer import Specformer, Classifier
 from data.Preprocessing import load_data
 import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results, group_by_attr
 from result_stat.result_append import result_append
+
+
+def fit_label(H_sen0):
+    print("--------------------------Stage2-------------------------")
+    H_sen0 = H_sen0.detach()
+    net_stage2 = Classifier(config['decorrela_dim'],
+                             config['decorrela_dim'],
+                             1).cuda()
+    net_stage2.apply(init_params)
+    optimizer = torch.optim.Adam(net_stage2.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
+    print(count_parameters(net_stage2))
+    best_acc = 0.0
+    best_epoch = -1
+    best_auc_roc_test = 0.0
+    best_f1_s_test = 0.0
+    best_test = 0.0
+    best_dp_test = 1e5
+    best_eo_test = 1e5
+    for epoch in range(2000):
+        net_stage2.train()
+        optimizer.zero_grad()
+        logit = net_stage2(H_sen0)
+        loss = F.binary_cross_entropy_with_logits(logit[idx_train], labels[idx_train].unsqueeze(1).float())
+        acc_train = accuracy(logit[idx_train], labels[idx_train]) * 100.0
+        loss.backward()
+        optimizer.step()
+        net_stage2.eval()
+        logit = net_stage2(H_sen0)
+        acc_val = accuracy(logit[idx_val], labels[idx_val]) * 100.0
+        acc_test = accuracy(logit[idx_test], labels[idx_test]) * 100.0
+        parity_test, equality_test = fair_metric(logit, idx_test, labels, sens)
+        auc_roc_test, f1_s_test, _ = evaluation_results(logit, labels, idx_test)
+        parity_test, equality_test = parity_test * 100.0, equality_test * 100.0
+        auc_roc_test, f1_s_test = auc_roc_test * 100.0, f1_s_test * 100.0
+
+        # if loss_val < best_loss:
+        #     best_loss = loss_val.item()
+        if acc_val > best_acc:
+            best_acc = acc_val.item()
+            best_epoch = epoch
+            best_auc_roc_test = auc_roc_test.item()
+            best_f1_s_test = f1_s_test.item()
+            best_test = acc_test.item()
+            best_dp_test = parity_test
+            best_eo_test = equality_test
+
+        print("Epoch {}:".format(epoch),
+              "Loss tr: {:.4f}".format(loss.item()),
+              "[Acc_sen0 tr: {:.4f}".format(acc_train.item()),
+              "va: {:.4f}".format(acc_val.item()),
+              "te: {:.4f}]".format(acc_test.item()),
+              "[DP: {:.4f}".format(parity_test),
+              "EO: {:.4f}]".format(equality_test),
+              "{}/{:.4f}".format(best_epoch, best_test))
+
+    print("Test results:",
+          "[Acc: {:.4f}".format(best_test),
+          "Auc: {:.4f}".format(best_auc_roc_test),
+          "F1: {:.4f}]".format(best_f1_s_test),
+          "[DP: {:.4f}".format(best_dp_test),
+          "EO: {:.4f}]".format(best_eo_test))
+    return best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test
 
 
 def main_worker(config):
@@ -130,6 +192,8 @@ def main_worker(config):
           "F1: {:.4f}]".format(best_f1_s_test),
           "[DP: {:.4f}".format(best_dp_test),
           "EO: {:.4f}]".format(best_eo_test))
+
+    # return fit_label(H_sen0)
     return best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test
 
 
@@ -157,9 +221,11 @@ if __name__ == '__main__':
 
     if torch.equal(idx_train, idx_sens_train) is not True:
         print("idx_train and idx_sens_train are not alignment, crop idx_train.")
-        idx_train = np.asarray(list(set(idx_train.cpu().numpy()) & set(idx_sens_train.cpu().numpy())))
-        idx_train = torch.LongTensor(idx_train)
-    idx_train_0, idx_train_1 = group_by_attr(idx_train, sens)
+        idx_train_crop = np.asarray(list(set(idx_train.cpu().numpy()) & set(idx_sens_train.cpu().numpy())))
+        idx_train_crop = torch.LongTensor(idx_train_crop)
+        idx_train_0, idx_train_1 = group_by_attr(idx_train_crop, sens)
+    else:
+        idx_train_0, idx_train_1 = group_by_attr(idx_train, sens)
     import random
     random.seed(20)
     random.shuffle(idx_train_0)

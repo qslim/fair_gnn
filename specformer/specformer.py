@@ -49,13 +49,13 @@ class SpecLayer(nn.Module):
         super(SpecLayer, self).__init__()
         self.prop_dropout = nn.Dropout(prop_dropout)
         self.ffn = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim),
+            nn.Linear(hidden_dim, signal_dim),
             # nn.LayerNorm(signal_dim),
             nn.GELU(),
             # nn.ELU()
             # nn.ReLU()
-            nn.Linear(hidden_dim, signal_dim),
-            nn.GELU(),
+            # nn.Linear(hidden_dim, signal_dim),
+            # nn.GELU(),
         )
 
     def forward(self, x):
@@ -91,6 +91,22 @@ class Filter(nn.Module):
         return new_e
 
 
+class Classifier(nn.Module):
+
+    def __init__(self, signal_dim, hidden_dim, nclass=1):
+        super(Classifier, self).__init__()
+        self.ffn = nn.Sequential(
+            nn.Linear(signal_dim, hidden_dim),
+            # nn.LayerNorm(hidden_dim),
+            nn.GELU(),
+            nn.Linear(hidden_dim, nclass),
+        )
+
+    def forward(self, x):
+        x = self.ffn(x)
+        return x
+
+
 class Specformer(nn.Module):
 
     def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, signal_dim=128, nheads=1,
@@ -98,7 +114,7 @@ class Specformer(nn.Module):
         super(Specformer, self).__init__()
 
         self.linear_encoder = nn.Linear(nfeat, hidden_dim)
-        self.classify = nn.Linear(signal_dim, nclass)
+        self.classify = Classifier(signal_dim, signal_dim, nclass)
 
         self.filter = Filter(hidden_dim=hidden_dim, nheads=nheads, tran_dropout=tran_dropout)
 
