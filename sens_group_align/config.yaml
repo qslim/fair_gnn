@@ -44,8 +44,8 @@ pokec_n:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
-    epoch_fit: 1000
-    epoch_debias: 5000
+    epoch_fit: 500
+    epoch_debias: 500
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.3
@@ -53,7 +53,7 @@ pokec_n:
     prop_dropout: 0.6
     norm: 'layer'
     eps: [-0.5]
-    eigk: 128
+    eigk: 256
     decorrelation: 10.0
     orthogonality: 10.0
     decorrela_dim: 128
@@ -62,7 +62,7 @@ pokec_n:
     shd_trans: 'F'
     label_number: 500
     sens_number: 200
-    ms_decor: 0.1
+    ms_decor: 0.0
 credit:
     nlayer: 2
     num_heads: 1
