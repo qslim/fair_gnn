@@ -64,6 +64,25 @@ class SpecLayer(nn.Module):
         return x
 
 
+class SpecLayerMSD(nn.Module):
+
+    def __init__(self, hidden_dim, signal_dim, prop_dropout=0.0):
+        super(SpecLayerMSD, self).__init__()
+        self.prop_dropout = nn.Dropout(prop_dropout)
+        self.ffn = nn.Sequential(
+            nn.Linear(hidden_dim, signal_dim),
+            nn.LayerNorm(signal_dim),
+            nn.GELU()
+            # nn.ELU()
+            # nn.ReLU()
+        )
+
+    def forward(self, x):
+        x = self.prop_dropout(x)
+        x = self.ffn(x)
+        return x
+
+
 class Filter(nn.Module):
     def __init__(self, hidden_dim=128, nheads=1,
                  tran_dropout=0.0):
@@ -180,3 +199,79 @@ class Specformer_wrapper(nn.Module):
         pred_y, _ = self.specformer_y(e, u, x)
 
         return pred_y, pred_s
+
+
+class SpecformerMSD(nn.Module):
+
+    def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, signal_dim=128, nheads=1,
+                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0):
+        super(SpecformerMSD, self).__init__()
+
+        self.linear_encoder = nn.Linear(nfeat, hidden_dim)
+        self.classify = nn.Linear(signal_dim, nclass)
+
+        self.filter = Filter(hidden_dim=hidden_dim, nheads=nheads, tran_dropout=tran_dropout)
+
+        self.feat_dp1 = nn.Dropout(feat_dropout)
+        self.feat_dp2 = nn.Dropout(feat_dropout)
+        layers = [SpecLayerMSD(hidden_dim, hidden_dim, prop_dropout) for i in range(nlayer - 1)]
+        layers.append(SpecLayerMSD(hidden_dim, signal_dim, prop_dropout))
+        self.layers = nn.ModuleList(layers)
+
+    def forward(self, e, u, x):
+        ut = u.permute(1, 0)
+        h = self.feat_dp1(x)
+        h = self.linear_encoder(h)
+
+        filter = self.filter(e)
+
+        for conv in self.layers:
+            utx = ut @ h
+            y = u @ (filter * utx)
+            h = h + y
+            h = conv(h)
+
+        h = self.feat_dp2(h)
+        pred = self.classify(h)
+
+        return pred
+
+
+class Specformer_wrapperMSD(nn.Module):
+    def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, signal_dim=128, nheads=1,
+                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, shd_filter=False, shd_trans=False):
+        super(Specformer_wrapperMSD, self).__init__()
+
+        self.specformer_s = SpecformerMSD(nclass,
+                                       nfeat,
+                                       nlayer,
+                                       hidden_dim,
+                                       signal_dim,
+                                       nheads,
+                                       tran_dropout,
+                                       feat_dropout,
+                                       prop_dropout)
+
+        self.specformer_y = SpecformerMSD(nclass,
+                                       nfeat,
+                                       nlayer,
+                                       hidden_dim,
+                                       hidden_dim,
+                                       nheads,
+                                       tran_dropout,
+                                       feat_dropout,
+                                       prop_dropout)
+
+        if shd_filter:
+            print('Applying shd_filter...')
+            self.specformer_s.filter = self.specformer_y.filter
+        if shd_trans:
+            print('Applying shd_trans...')
+            self.specformer_s.layers = self.specformer_y.layers
+
+    def forward(self, e, u, x):
+        pred_s = self.specformer_s(e, u, x)
+        pred_y = self.specformer_y(e, u, x)
+
+        return pred_y, pred_s
+

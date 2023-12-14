@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import sys
 sys.path.append('..')
-from specformer import Specformer_wrapper
+from specformer import Specformer_wrapperMSD
 # from eigen_gnn import Specformer_wrapper
 from data.Preprocessing import load_data
 import scipy as sp
@@ -31,7 +31,7 @@ def multi_scale_decorrelation(output, output_sens):
     # ms_cor = torch.abs(torch.mean((output_sens - torch.mean(output_sens)) * (output - torch.mean(output))))
     ms_cor = 0.0
     output, output_sens = output.squeeze(), output_sens.squeeze()
-    for p in [0.5, 1.0, 1.5, 2.0]:
+    for p in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0]:
         _output, _output_sens = output.abs().pow(p) * (output / output.abs()), output_sens.abs().pow(p) * (output_sens / output_sens.abs())
         # _output, _output_sens =output.pow(p), output_sens.pow(p)
 
@@ -52,7 +52,7 @@ def main_worker(config):
 
     E, U = e.detach().clone(), u.detach().clone()
 
-    net = Specformer_wrapper(nclass=1,
+    net = Specformer_wrapperMSD(nclass=1,
                              nfeat=x.size(1),
                              nlayer=config['nlayer'],
                              hidden_dim=config['hidden_dim'],
@@ -152,7 +152,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='income')
+    parser.add_argument('--dataset', default='pokec_n')
     parser.add_argument('--rank', type=int, default=0, help="result stat")
     args = parser.parse_args()
 
