@@ -85,7 +85,7 @@ credit:
     shd_trans: 'F'
     label_number: 6000
     sens_number: -1
-    ms_decor: 0.0
+    ms_decor: 0.5
 german:
     nlayer: 2
     num_heads: 1

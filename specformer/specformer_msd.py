@@ -106,7 +106,7 @@ class Specformer(nn.Module):
         self.filter = Filter(hidden_dim=hidden_dim, nheads=nheads, tran_dropout=tran_dropout)
 
         self.feat_dp1 = nn.Dropout(feat_dropout)
-        self.feat_dp2 = nn.Dropout(feat_dropout)
+        # self.feat_dp2 = nn.Dropout(feat_dropout)
         self.layers = nn.ModuleList([SpecLayer(hidden_dim, signal_dim, prop_dropout) for i in range(nlayer)])
 
     def forward(self, e, u, x):
@@ -122,7 +122,7 @@ class Specformer(nn.Module):
             h = h + y
             h = conv(h)
 
-        h = self.feat_dp2(h)
+        # h = self.feat_dp2(h)
         pred = self.classify(h)
 
         return pred
