@@ -141,12 +141,18 @@ def main_worker(config):
             # group_distance = F.cosine_similarity(H_sen0, H_sen1).abs().mean().squeeze()
             # group_distance = linalg.vector_norm(H_sen0 - H_sen1, dim=1).mean() / (torch.std(H_sen0, dim=1).mean() + torch.std(H_sen1, dim=1).mean() + 1e-8)
             # group_distance = (linalg.vector_norm(H_sen0 - H_sen1, dim=1) / (torch.std(H_sen0, dim=1) + torch.std(H_sen1, dim=1) + 1e-8)).mean()
-            group_distance = (H_sen0 - H_sen1).abs().mean() # pokec_n
             # group_distance = linalg.vector_norm(H_sen0 - H_sen1) / (torch.std(H_sen0, dim=1).mean() + torch.std(H_sen1, dim=1).mean())
+
+            if config['align_mode'] == 'l1':
+                group_distance = (H_sen0 - H_sen1).abs().mean()  # pokec_n
+            elif config['align_mode'] == 'l2':
+                group_distance = linalg.vector_norm(H_sen0 - H_sen1, dim=1).mean()
+            else:
+                raise ValueError('Unknown group align!')
 
         loss_sen0 = F.binary_cross_entropy_with_logits(logit_sen0[idx_train_0], labels[idx_train_0].unsqueeze(1).float())
         loss_sen1 = F.binary_cross_entropy_with_logits(logit_sen1[idx_train_1], labels[idx_train_1].unsqueeze(1).float())
-        loss = loss_sen1 + loss_sen0 + config['group_align'] * group_distance
+        loss = loss_sen1 + loss_sen0 + config['align_weight'] * group_distance
         # loss = loss_sen1 + loss_sen0 + config['cov'] * cov
         acc_train_sen0 = accuracy(logit_sen0[idx_train_0], labels[idx_train_0]) * 100.0
         acc_train_sen1 = accuracy(logit_sen1[idx_train_1], labels[idx_train_1]) * 100.0
@@ -208,7 +214,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='pokec_n')
+    parser.add_argument('--dataset', default='income')
     parser.add_argument('--rank', type=int, default=0, help="result stat")
     args = parser.parse_args()
 
@@ -237,12 +243,18 @@ if __name__ == '__main__':
     random.seed(20)
     random.shuffle(idx_train_0)
     random.shuffle(idx_train_1)
-    if idx_train_0.shape[0] < idx_train_1.shape[0]:
+    if idx_train_0.shape[0] < idx_train_1.shape[0] or config['dataset'] == 'income':
         print("idx_train_0, idx_train_1 swap.")
         tmp = idx_train_0
         idx_train_0 = idx_train_1
         idx_train_1 = tmp
     print("idx_train: {}, idx_train_0: {}, idx_train_1: {}".format(idx_train.shape[0], idx_train_0.shape[0], idx_train_1.shape[0]))
+    
+    assert (len(list(set(idx_train_0.cpu().numpy()) & set(idx_train_1.cpu().numpy()))) == 0)
+    assert (len(list(set(idx_train_0.cpu().numpy()) & set(idx_val.cpu().numpy()))) == 0)
+    assert (len(list(set(idx_train_0.cpu().numpy()) & set(idx_test.cpu().numpy()))) == 0)
+    assert (len(list(set(idx_train_1.cpu().numpy()) & set(idx_val.cpu().numpy()))) == 0)
+    assert (len(list(set(idx_train_1.cpu().numpy()) & set(idx_test.cpu().numpy()))) == 0)
 
     e, u = [], []
     deg = np.array(adj.sum(axis=0)).flatten()
