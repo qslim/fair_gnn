@@ -8,6 +8,7 @@ nba:
     tran_dropout: 0.3
     feat_dropout: 0.5
     prop_dropout: 0.5
+    norm: 'none'
     eps: [-0.2]
     eigk: 128
     signal_dim: 64
@@ -19,51 +20,55 @@ pokec_z:
     num_heads: 1
     hidden_dim: 128
     epoch_fit: 500
-    epoch_debias: 500
+    epoch_debias: 5000
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.5
     feat_dropout: 0.5
     prop_dropout: 0.5
+    norm: 'none'
     eps: [-0.5]
     eigk: 256
     signal_dim: 128
     patience: 5
     shd_filter: 'F'
     shd_trans: 'F'
-    label_number: 500
-    sens_number: 200
-    group_align: 0.0001
+    label_number: 999999
+    sens_number: 999999
+    group_align: 0.001
 pokec_n:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
     epoch_fit: 500
-    epoch_debias: 500
+    epoch_debias: 5000
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.3
     feat_dropout: 0.6
     prop_dropout: 0.6
+    norm: 'none'
     eps: [-0.5]
     eigk: 256
     signal_dim: 128
     patience: 5
     shd_filter: 'F'
     shd_trans: 'F'
-    label_number: 500
-    sens_number: 200
+    label_number: 999999
+    sens_number: 999999
+    group_align: 1.0
 credit:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
     epoch_fit: 1000
-    epoch_debias: 500
+    epoch_debias: 5000
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.5
     feat_dropout: 0.5
     prop_dropout: 0.5
+    norm: 'none'
     eps: [-0.5]
     eigk: 128
     signal_dim: 128
@@ -72,7 +77,7 @@ credit:
     shd_trans: 'F'
     label_number: 6000
     sens_number: -1
-    group_align: 0.01
+    group_align: 0.001
 german:
     nlayer: 2
     num_heads: 1
@@ -84,6 +89,7 @@ german:
     tran_dropout: 0.5
     feat_dropout: 0.5
     prop_dropout: 0.5
+    norm: 'none'
     eps: [-0.5]
     eigk: 128
     signal_dim: 128
@@ -102,6 +108,7 @@ bail:
     tran_dropout: 0.5
     feat_dropout: 0.5
     prop_dropout: 0.5
+    norm: 'none'
     eps: [-0.5]
     eigk: 256
     signal_dim: 128
@@ -114,13 +121,14 @@ income:
     nlayer: 3
     num_heads: 1
     hidden_dim: 64
-    epoch_fit: 500
-    epoch_debias: 500
+    epoch_fit: 1000
+    epoch_debias: 5000
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.5
     feat_dropout: 0.5
     prop_dropout: 0.5
+    norm: 'none'
     eps: [-0.5]
     eigk: 64
     signal_dim: 128
@@ -129,3 +137,4 @@ income:
     shd_trans: 'F'
     label_number: 3000
     sens_number: -1
+    group_align: 0.01

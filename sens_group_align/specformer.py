@@ -110,7 +110,7 @@ class Classifier(nn.Module):
 class Specformer(nn.Module):
 
     def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, signal_dim=128, nheads=1,
-                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, norm='none'):
+                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, norm='none', classifier=None):
         super(Specformer, self).__init__()
 
         self.feat_encoder = nn.Sequential(
@@ -119,7 +119,7 @@ class Specformer(nn.Module):
             # nn.Linear(hidden_dim, hidden_dim),
             # nn.ReLU(),
         )
-        self.classify = Classifier(signal_dim, signal_dim, nclass)
+        self.classify = classifier
 
         self.filter = Filter(hidden_dim=hidden_dim, nheads=nheads, tran_dropout=tran_dropout)
 
