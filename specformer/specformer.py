@@ -49,8 +49,8 @@ class SpecLayer(nn.Module):
         super(SpecLayer, self).__init__()
         self.prop_dropout = nn.Dropout(prop_dropout)
         self.ffn = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.LayerNorm(hidden_dim),
+            nn.Linear(hidden_dim, signal_dim),
+            nn.LayerNorm(signal_dim),
             nn.GELU()
             # nn.ELU()
             # nn.ReLU()
@@ -107,7 +107,7 @@ class Specformer(nn.Module):
 
         self.feat_dp1 = nn.Dropout(feat_dropout)
         # self.feat_dp2 = nn.Dropout(feat_dropout)
-        self.layers = nn.ModuleList([SpecLayer(hidden_dim, signal_dim, prop_dropout) for i in range(nlayer)])
+        self.layers = nn.ModuleList([SpecLayer(hidden_dim, hidden_dim, prop_dropout) for i in range(nlayer)])
 
     def forward(self, e, u, x):
         ut = u.permute(1, 0)

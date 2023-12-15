@@ -37,7 +37,7 @@ def main_worker(config):
                           x.size(1),
                           config['nlayer'],
                           config['hidden_dim'],
-                          config['decorrela_dim'],
+                          config['signal_dim'],
                           config['num_heads'],
                           config['tran_dropout'],
                           config['feat_dropout'],

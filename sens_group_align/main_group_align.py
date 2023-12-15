@@ -16,8 +16,8 @@ from result_stat.result_append import result_append
 def fit_label(H_sen0):
     print("--------------------------Stage2-------------------------")
     H_sen0 = H_sen0.detach()
-    net_stage2 = Classifier(config['decorrela_dim'],
-                             config['decorrela_dim'],
+    net_stage2 = Classifier(config['signal_dim'],
+                             config['signal_dim'],
                              1).cuda()
     net_stage2.apply(init_params)
     optimizer = torch.optim.Adam(net_stage2.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
@@ -87,7 +87,7 @@ def main_worker(config):
                           x.size(1),
                           config['nlayer'],
                           config['hidden_dim'],
-                          config['decorrela_dim'],
+                          config['signal_dim'],
                           config['num_heads'],
                           config['tran_dropout'],
                           config['feat_dropout'],
@@ -98,7 +98,7 @@ def main_worker(config):
                           x.size(1),
                           config['nlayer'],
                           config['hidden_dim'],
-                          config['decorrela_dim'],
+                          config['signal_dim'],
                           config['num_heads'],
                           config['tran_dropout'],
                           config['feat_dropout'],
@@ -139,7 +139,7 @@ def main_worker(config):
 
         loss_sen0 = F.binary_cross_entropy_with_logits(logit_sen0[idx_train_0], labels[idx_train_0].unsqueeze(1).float())
         loss_sen1 = F.binary_cross_entropy_with_logits(logit_sen1[idx_train_1], labels[idx_train_1].unsqueeze(1).float())
-        loss = loss_sen1 + loss_sen0 + 0.0001 * group_distance
+        loss = loss_sen1 + loss_sen0 + config['group_align'] * group_distance
         # loss = loss_sen1 + loss_sen0 + config['cov'] * cov
         acc_train_sen0 = accuracy(logit_sen0[idx_train_0], labels[idx_train_0]) * 100.0
         acc_train_sen1 = accuracy(logit_sen1[idx_train_1], labels[idx_train_1]) * 100.0

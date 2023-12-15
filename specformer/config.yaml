@@ -12,7 +12,7 @@ nba:
     eps: [-0.2]
     eigk: 128
     decorrelation: 0.0
-    decorrela_dim: 64
+    signal_dim: 64
     patience: 5
     label_number: 100
     sens_number: 50
@@ -33,7 +33,7 @@ pokec_z:
     eigk: 256
     decorrelation: 1.0
     orthogonality: 10.0
-    decorrela_dim: 128
+    signal_dim: 128
     patience: 5
     shd_filter: 'F'
     shd_trans: 'F'
@@ -56,7 +56,7 @@ pokec_n:
     eigk: 128
     decorrelation: 10.0
     orthogonality: 10.0
-    decorrela_dim: 128
+    signal_dim: 128
     patience: 5
     shd_filter: 'F'
     shd_trans: 'F'
@@ -80,7 +80,7 @@ credit:
     eigk: 128
     decorrelation: 1.0
     orthogonality: 500.0
-    decorrela_dim: 128
+    signal_dim: 128
     patience: 5
     shd_filter: 'F'
     shd_trans: 'F'
@@ -104,7 +104,7 @@ german:
     eigk: 128
     decorrelation: 1.0
     orthogonality: 200.0
-    decorrela_dim: 128
+    signal_dim: 128
     patience: 5
     shd_filter: 'F'
     shd_trans: 'F'
@@ -126,7 +126,7 @@ bail:
     eigk: 256
     decorrelation: 1.0
     orthogonality: 10.0
-    decorrela_dim: 128
+    signal_dim: 128
     patience: 5
     shd_filter: 'F'
     shd_trans: 'F'
@@ -149,7 +149,7 @@ income:
     eigk: 64
     decorrelation: 1.0
     orthogonality: 100.0
-    decorrela_dim: 128
+    signal_dim: 128
     patience: 5
     shd_filter: 'F'
     shd_trans: 'F'

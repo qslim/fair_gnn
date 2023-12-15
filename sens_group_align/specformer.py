@@ -113,7 +113,12 @@ class Specformer(nn.Module):
                  tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, norm='none'):
         super(Specformer, self).__init__()
 
-        self.linear_encoder = nn.Linear(nfeat, hidden_dim)
+        self.feat_encoder = nn.Sequential(
+            nn.Linear(nfeat, hidden_dim),
+            # nn.ReLU(),
+            # nn.Linear(hidden_dim, hidden_dim),
+            # nn.ReLU(),
+        )
         self.classify = Classifier(signal_dim, signal_dim, nclass)
 
         self.filter = Filter(hidden_dim=hidden_dim, nheads=nheads, tran_dropout=tran_dropout)
@@ -127,7 +132,7 @@ class Specformer(nn.Module):
     def forward(self, e, u, x):
         ut = u.permute(1, 0)
         h = self.feat_dp1(x)
-        h = self.linear_encoder(h)
+        h = self.feat_encoder(h)
 
         filter = self.filter(e)
 

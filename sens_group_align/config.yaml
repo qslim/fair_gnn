@@ -8,15 +8,12 @@ nba:
     tran_dropout: 0.3
     feat_dropout: 0.5
     prop_dropout: 0.5
-    norm: 'layer'
     eps: [-0.2]
     eigk: 128
-    decorrelation: 0.0
-    decorrela_dim: 64
+    signal_dim: 64
     patience: 5
     label_number: 100
     sens_number: 50
-    ms_decor: 0.0
 pokec_z:
     nlayer: 3
     num_heads: 1
@@ -28,18 +25,15 @@ pokec_z:
     tran_dropout: 0.5
     feat_dropout: 0.5
     prop_dropout: 0.5
-    norm: 'layer'
     eps: [-0.5]
     eigk: 256
-    decorrelation: 1.0
-    orthogonality: 10.0
-    decorrela_dim: 128
+    signal_dim: 128
     patience: 5
     shd_filter: 'F'
     shd_trans: 'F'
     label_number: 500
     sens_number: 200
-    ms_decor: 0.0
+    group_align: 0.0001
 pokec_n:
     nlayer: 2
     num_heads: 1
@@ -51,18 +45,14 @@ pokec_n:
     tran_dropout: 0.3
     feat_dropout: 0.6
     prop_dropout: 0.6
-    norm: 'layer'
     eps: [-0.5]
     eigk: 256
-    decorrelation: 10.0
-    orthogonality: 10.0
-    decorrela_dim: 128
+    signal_dim: 128
     patience: 5
     shd_filter: 'F'
     shd_trans: 'F'
     label_number: 500
     sens_number: 200
-    ms_decor: 0.0
 credit:
     nlayer: 2
     num_heads: 1
@@ -74,18 +64,15 @@ credit:
     tran_dropout: 0.5
     feat_dropout: 0.5
     prop_dropout: 0.5
-    norm: 'na'
     eps: [-0.5]
     eigk: 128
-    decorrelation: 1.0
-    orthogonality: 500.0
-    decorrela_dim: 128
+    signal_dim: 128
     patience: 5
     shd_filter: 'F'
     shd_trans: 'F'
     label_number: 6000
     sens_number: -1
-    ms_decor: 0.0
+    group_align: 0.01
 german:
     nlayer: 2
     num_heads: 1
@@ -97,18 +84,14 @@ german:
     tran_dropout: 0.5
     feat_dropout: 0.5
     prop_dropout: 0.5
-    norm: 'na'
     eps: [-0.5]
     eigk: 128
-    decorrelation: 1.0
-    orthogonality: 200.0
-    decorrela_dim: 128
+    signal_dim: 128
     patience: 5
     shd_filter: 'F'
     shd_trans: 'F'
     label_number: 100
     sens_number: -1
-    ms_decor: 0.0
 bail:
     nlayer: 3
     num_heads: 1
@@ -119,18 +102,14 @@ bail:
     tran_dropout: 0.5
     feat_dropout: 0.5
     prop_dropout: 0.5
-    norm: 'na'
     eps: [-0.5]
     eigk: 256
-    decorrelation: 1.0
-    orthogonality: 10.0
-    decorrela_dim: 128
+    signal_dim: 128
     patience: 5
     shd_filter: 'F'
     shd_trans: 'F'
     label_number: 100
     sens_number: -1
-    ms_decor: 0.0
 income:
     nlayer: 3
     num_heads: 1
@@ -142,15 +121,11 @@ income:
     tran_dropout: 0.5
     feat_dropout: 0.5
     prop_dropout: 0.5
-    norm: 'na'
     eps: [-0.5]
     eigk: 64
-    decorrelation: 1.0
-    orthogonality: 100.0
-    decorrela_dim: 128
+    signal_dim: 128
     patience: 5
     shd_filter: 'F'
     shd_trans: 'F'
     label_number: 3000
     sens_number: -1
-    ms_decor: 100.0

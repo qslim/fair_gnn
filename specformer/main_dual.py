@@ -56,7 +56,7 @@ def main_worker():
                              nfeat=x.size(1),
                              nlayer=config['nlayer'],
                              hidden_dim=config['hidden_dim'],
-                             signal_dim=config['decorrela_dim'],
+                             signal_dim=config['signal_dim'],
                              nheads=config['num_heads'],
                              tran_dropout=config['tran_dropout'],
                              feat_dropout=config['feat_dropout'],
