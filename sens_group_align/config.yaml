@@ -105,8 +105,9 @@ german:
 bail:
     nlayer: 3
     num_heads: 1
-    hidden_dim: 128
-    epoch: 500
+    hidden_dim: 64
+    epoch_fit: 500
+    epoch_debias: 5000
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.5
@@ -114,13 +115,15 @@ bail:
     prop_dropout: 0.5
     norm: 'none'
     eps: [-0.5]
-    eigk: 256
-    signal_dim: 128
-    patience: 5
+    eigk: 128
+    signal_dim: 64
+    patience: 20
     shd_filter: 'F'
     shd_trans: 'F'
-    label_number: 100
+    label_number: 500
     sens_number: -1
+    align_weight: 1.0
+    align_mode: 'l1'
 income:
     nlayer: 2
     num_heads: 1
