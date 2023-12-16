@@ -75,8 +75,8 @@ def main_worker(config):
         net.train()
         optimizer.zero_grad()
 
-        output_sens, _ = net_sens(E, U, x)
-        output, _ = net(E, U, x)
+        output_sens = net_sens(E, U, x)
+        output = net(E, U, x)
 
         # cov = torch.tensor(0.0)
         if epoch >= config['epoch_fit']:
@@ -93,12 +93,12 @@ def main_worker(config):
         optimizer.step()
 
         net_sens.eval()
-        output_sens, _ = net_sens(E, U, x)
+        output_sens = net_sens(E, U, x)
         acc_val_sens = accuracy(output_sens[idx_val], sens[idx_val]) * 100.0
         acc_test_sens = accuracy(output_sens[idx_test], sens[idx_test]) * 100.0
 
         net.eval()
-        output, _ = net(E, U, x)
+        output = net(E, U, x)
         loss_val = F.binary_cross_entropy_with_logits(output[idx_val], labels[idx_val].unsqueeze(1).float())
         acc_val = accuracy(output[idx_val], labels[idx_val]) * 100.0
         acc_test = accuracy(output[idx_test], labels[idx_test]) * 100.0
