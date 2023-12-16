@@ -45,6 +45,21 @@ def multi_scale_decorrelation(output, output_sens):
     return ms_cor
 
 
+def multi_scale_decorrelation2(output, output_sens):
+    output, output_sens = output.squeeze(), output_sens.squeeze()
+    output_mat, output_sens_mat = [], []
+    for p in config['ms_bank']:
+        _output, _output_sens = output.abs().pow(p) * (output / output.abs()), output_sens.abs().pow(p) * (output_sens / output_sens.abs())
+        _output, _output_sens = _output.unsqueeze(0), _output_sens.unsqueeze(0)
+        output_mat.append(_output)
+        output_sens_mat.append(_output_sens)
+    output_mat, output_sens_mat = torch.cat(output_mat, dim=0), torch.cat(output_sens_mat, dim=0)
+    output_mat, output_sens_mat = output_mat - torch.mean(output_mat, dim=1, keepdim=True), output_sens_mat - torch.mean(output_sens_mat, dim=1, keepdim=True)
+    # ms_cor = F.cosine_similarity(output_sens_mat.unsqueeze(1), output_mat.unsqueeze(0)).abs().sum()
+    ms_cor = F.cosine_similarity(output_sens_mat, output_mat).abs().sum()
+    return ms_cor
+
+
 def main_worker():
     print(config)
     seed_everything(config['seed'])
