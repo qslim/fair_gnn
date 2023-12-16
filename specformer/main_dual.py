@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import sys
+import os
 sys.path.append('..')
 from specformer import Specformer_wrapper
 # from eigen_gnn import Specformer_wrapper
@@ -170,25 +171,31 @@ if __name__ == '__main__':
     assert (torch.equal(torch.abs(labels[idx_test] - 0.5) * 2.0, torch.ones_like(labels[idx_test])))
     assert (torch.equal(torch.abs(sens - 0.5) * 2.0, torch.ones_like(sens)))
 
-    e, u = [], []
-    deg = np.array(adj.sum(axis=0)).flatten()
-    for eps in config['eps']:
-        print("Start building e, u with {}...".format(eps), end='')
-        # build graph matrix
-        D_ = sp.sparse.diags(deg ** eps)
-        A_ = D_.dot(adj.dot(D_))
-        # A_ = sp.sparse.eye(adj.shape[0]) - A_
+    eigsh_which = 'LM'
+    dataset_path = '../pt/{}_{}{}.pt'.format(config['dataset'], eigsh_which, config['eigk'])
+    if os.path.exists(dataset_path):
+        e, u = torch.load(dataset_path)
+    else:
+        e, u = [], []
+        deg = np.array(adj.sum(axis=0)).flatten()
+        for eps in config['eps']:
+            print("Start building e, u with {}...".format(eps), end='')
+            # build graph matrix
+            D_ = sp.sparse.diags(deg ** eps)
+            A_ = D_.dot(adj.dot(D_))
+            # A_ = sp.sparse.eye(adj.shape[0]) - A_
 
-        # eigendecomposition
-        if False:
-            _e, _u = np.linalg.eigh(A_.todense())
-            _e, _u = _e[-256:], _u[:, -256:]
-        else:
-            _e, _u = sp.sparse.linalg.eigsh(A_, which='LM', k=config['eigk'], tol=1e-5)
-        e.append(torch.FloatTensor(_e))
-        u.append(torch.FloatTensor(_u))
-        print("Done.")
-    e, u = torch.cat(e, dim=0).cuda(), torch.cat(u, dim=1).cuda()
+            # eigendecomposition
+            if False:
+                _e, _u = np.linalg.eigh(A_.todense())
+                _e, _u = _e[-256:], _u[:, -256:]
+            else:
+                _e, _u = sp.sparse.linalg.eigsh(A_, which=eigsh_which, k=config['eigk'], tol=1e-5)
+            e.append(torch.FloatTensor(_e))
+            u.append(torch.FloatTensor(_u))
+            print("Done.")
+        e, u = torch.cat(e, dim=0).cuda(), torch.cat(u, dim=1).cuda()
+        torch.save([e, u], dataset_path)
 
     acc_test, best_auc_roc_test, best_f1_s_test, dp_test, eo_test = [], [], [], [], []
     for seed in config['seeds']:
