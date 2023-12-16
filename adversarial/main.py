@@ -12,7 +12,7 @@ from utils import seed_everything, init_params, count_parameters, accuracy, fair
 from result_stat.result_append import result_append
 
 
-def main_worker(config):
+def main_worker():
     print(config)
     seed_everything(config['seed'])
     # device = 'cuda:{}'.format(config['cuda'])
@@ -43,17 +43,16 @@ def main_worker(config):
         output = net.evaluate(E, U, x)
 
         acc_val = accuracy(output[idx_val], labels[idx_val]) * 100.0
-        auc_roc_val, f1_s_val, _ = evaluation_results(output, labels, idx_val)
         acc_test = accuracy(output[idx_test], labels[idx_test]) * 100.0
-        auc_roc_test, f1_s_test, _ = evaluation_results(output, labels, idx_test)
         parity_test, equality_test = fair_metric(output, idx_test, labels, sens)
+        auc_roc_test, f1_s_test, _ = evaluation_results(output, labels, idx_test)
 
         parity_test, equality_test = parity_test * 100.0, equality_test * 100.0
         auc_roc_test, f1_s_test = auc_roc_test * 100.0, f1_s_test * 100.0
 
         # if loss_val < best_loss:
         #     best_loss = loss_val.item()
-        if acc_val > best_acc:
+        if epoch > config['patience'] and acc_val > best_acc:
             best_acc = acc_val.item()
             best_epoch = epoch
             best_auc_roc_test = auc_roc_test.item()
@@ -63,22 +62,22 @@ def main_worker(config):
             best_eo_test = equality_test
 
         print("Epoch {}:".format(epoch),
-              'loss: {:.4f}'.format(cls_loss.item()),
+              "Loss tr: {:.4f}".format(cls_loss.item()),
               "va: {:.4f}".format(acc_val.item()),
               "te: {:.4f}".format(acc_test.item()),
               # "auc_roc_t: {:.4f}".format(auc_roc_test.item()),
               # "f1_s_t: {:.4f}".format(f1_s_test.item()),
               "con: {:.4f}".format(group_confusion.item()),
-              "DP: {:.4f}".format(parity_test),
-              "EO: {:.4f}".format(equality_test),
+              "[DP: {:.4f}".format(parity_test),
+              "EO: {:.4f}]".format(equality_test),
               "{}/{:.4f}".format(best_epoch, best_test))
 
     print("Test results:",
-          "Acc: {:.4f}".format(best_test),
+          "[Acc: {:.4f}".format(best_test),
           "Auc: {:.4f}".format(best_auc_roc_test),
-          "F1: {:.4f}".format(best_f1_s_test),
-          "DP: {:.4f}".format(best_dp_test),
-          "EO: {:.4f}".format(best_eo_test))
+          "F1: {:.4f}]".format(best_f1_s_test),
+          "[DP: {:.4f}".format(best_dp_test),
+          "EO: {:.4f}]".format(best_eo_test))
     return best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test
 
 
@@ -136,7 +135,7 @@ if __name__ == '__main__':
     acc_test, best_auc_roc_test, best_f1_s_test, dp_test, eo_test = [], [], [], [], []
     for seed in config['seeds']:
         config['seed'] = seed
-        _acc_test, _best_auc_roc_test, _best_f1_s_test, _dp_test, _eo_test = main_worker(config)
+        _acc_test, _best_auc_roc_test, _best_f1_s_test, _dp_test, _eo_test = main_worker()
         acc_test.append(_acc_test)
         best_auc_roc_test.append(_best_auc_roc_test)
         best_f1_s_test.append(_best_f1_s_test)
