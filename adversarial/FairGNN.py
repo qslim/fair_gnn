@@ -60,7 +60,8 @@ class FairGNN(nn.Module):
 
         self.cls_loss = self.criterion(y[idx_train],labels[idx_train].unsqueeze(1).float())
         # self.group_confusion = torch.var(s_g.squeeze())
-        self.group_confusion = torch.var(F.logsigmoid(s_g.squeeze() * 1.0))
+        # self.group_confusion = torch.var(F.logsigmoid(s_g.squeeze() * 1.0))
+        self.group_confusion = torch.std(F.logsigmoid(s_g.squeeze() * 1.0))
         # self.group_confusion = -torch.mean(0.5 * F.logsigmoid(s_g.squeeze()) + 0.5 * F.logsigmoid(-s_g.squeeze()))
         # print('Group Confusion:', self.group_confusion.item())
 

@@ -69,7 +69,7 @@ credit:
     eig_which: 'LM'
     eig_k: 128
     decorrela_dim: 128
-    adver: 0.0
+    adver: 20.0
     init_mean: 0.0
     init_std: 0.01
     label_number: 6000
@@ -129,5 +129,5 @@ income:
     adver: 100.0
     init_mean: 1.0
     init_std: 0.1
-    label_number: 9999999
+    label_number: 3000
     sens_number: -1
