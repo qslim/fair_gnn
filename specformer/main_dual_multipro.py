@@ -49,7 +49,7 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train, idx_val,
         ms_cor = 0.0
         if epoch >= config['epoch_fit']:
             # output = orthogonal_projection(output, output_sens, config)
-            ms_cor = sin_scale_decorrelation(output, output_sens, config)
+            ms_cor = pow_scale_decorrelation(output, output_sens, config)
 
         loss_sens = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train],
                                                   sens[idx_sens_train].unsqueeze(1).float())
@@ -119,7 +119,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='credit')
+    parser.add_argument('--dataset', default='income')
     parser.add_argument('--rank', type=int, default=0, help="result stat")
     args = parser.parse_args()
 

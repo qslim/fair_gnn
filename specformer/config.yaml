@@ -146,14 +146,14 @@ income:
     prop_dropout: 0.5
     norm: 'na'
     eps: [-0.5]
-    eigk: 128
+    eigk: 64
     decorrelation: 1.0
     orthogonality: 100.0
     signal_dim: 128
-    patience: 20
+    patience: 5
     shd_filter: 'F'
     shd_trans: 'F'
     label_number: 3000
     sens_number: -1
-    ms_decor: 10.0
-    ms_bank: [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
+    ms_decor: 100.0
+    ms_bank: [0.5, 1.0, 1.5, 2.0]

@@ -22,8 +22,10 @@ def pow_scale_decorrelation(output, output_sens, config):
     ms_cor = 0.0
     output, output_sens = output.squeeze(), output_sens.squeeze()
     for p in config['ms_bank']:
-        # _output, _output_sens = output.abs().pow(p) * (output / output.abs()), output_sens.abs().pow(p) * (output_sens / output_sens.abs())
-        _output, _output_sens = output.abs().pow(p), output_sens.abs().pow(p)
+        if config['dataset'] == 'income':
+            _output, _output_sens = output.abs().pow(p) * (output / output.abs()), output_sens.abs().pow(p) * (output_sens / output_sens.abs())
+        else:
+            _output, _output_sens = output.abs().pow(p), output_sens.abs().pow(p)
         # _output, _output_sens =output.pow(p), output_sens.pow(p)
 
         # ms_cor = ms_cor + torch.abs(torch.mean((_output_sens - torch.mean(_output_sens)) * (_output - torch.mean(_output))))
