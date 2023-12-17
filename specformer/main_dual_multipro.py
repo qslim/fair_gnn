@@ -5,6 +5,7 @@ import torch
 import torch.nn.functional as F
 import sys
 import os
+from torch.multiprocessing import Process, set_start_method, Queue
 sys.path.append('..')
 from specformer import Specformer_wrapper
 # from eigen_gnn import Specformer_wrapper
@@ -14,7 +15,7 @@ from utils import seed_everything, init_params, count_parameters, accuracy, fair
 from result_stat.result_append import result_append
 
 
-def orthogonal_projection(output, output_sens):
+def orthogonal_projection(output, output_sens, config):
     # y_score, s_score = torch.sigmoid(output), torch.sigmoid(output_sens)
     # cov = torch.abs(torch.mean((s_score - torch.mean(s_score)) * (y_score - torch.mean(y_score))))
 
@@ -27,7 +28,7 @@ def orthogonal_projection(output, output_sens):
     return output
 
 
-def multi_scale_decorrelation(output, output_sens):
+def multi_scale_decorrelation(output, output_sens, config):
     # y_score, s_score = torch.sigmoid(output), torch.sigmoid(output_sens)
     # ms_cor = torch.abs(torch.mean((output_sens - torch.mean(output_sens)) * (output - torch.mean(output))))
     ms_cor = 0.0
@@ -45,7 +46,7 @@ def multi_scale_decorrelation(output, output_sens):
     return ms_cor
 
 
-def multi_scale_decorrelation2(output, output_sens):
+def multi_scale_decorrelation2(output, output_sens, config):
     output, output_sens = output.squeeze(), output_sens.squeeze()
     output_mat, output_sens_mat = [], []
     for p in config['ms_bank']:
@@ -60,14 +61,13 @@ def multi_scale_decorrelation2(output, output_sens):
     return ms_cor
 
 
-def main_worker():
+def main_worker(seed, result_queue, config, E, U, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train):
     print(config)
-    seed_everything(config['seed'])
+    seed_everything(seed)
     # device = 'cuda:{}'.format(config['cuda'])
     # torch.cuda.set_device(config['cuda'])
 
     # E, U = e.detach().clone(), u.detach().clone()
-    E, U, = e, u
 
     net = Specformer_wrapper(nclass=1,
                              nfeat=x.size(1),
@@ -101,8 +101,8 @@ def main_worker():
         # cov = torch.tensor(0.0)
         ms_cor = 0.0
         if epoch >= config['epoch_fit']:
-            # output = orthogonal_projection(output, output_sens)
-            ms_cor = multi_scale_decorrelation(output, output_sens)
+            # output = orthogonal_projection(output, output_sens, config)
+            ms_cor = multi_scale_decorrelation(output, output_sens, config)
 
         loss_sens = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train],
                                                   sens[idx_sens_train].unsqueeze(1).float())
@@ -162,7 +162,10 @@ def main_worker():
           "F1: {:.4f}]".format(best_f1_s_test),
           "[DP: {:.4f}".format(best_dp_test),
           "EO: {:.4f}]".format(best_eo_test))
-    return best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test
+
+    # Put the results in the queue
+    result_queue.put((best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test))
+    # return best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test
 
 
 if __name__ == '__main__':
@@ -213,10 +216,28 @@ if __name__ == '__main__':
         e, u = torch.cat(e, dim=0).cuda(), torch.cat(u, dim=1).cuda()
         torch.save([e, u], dataset_path)
 
+    # Set the start method to 'spawn' for Windows compatibility
+    try:
+        set_start_method('spawn')
+    except RuntimeError:
+        pass
+
     acc_test, best_auc_roc_test, best_f1_s_test, dp_test, eo_test = [], [], [], [], []
+    # Create a queue for collecting results
+    result_queue = Queue()
+    processes = []
     for seed in config['seeds']:
-        config['seed'] = seed
-        _acc_test, _best_auc_roc_test, _best_f1_s_test, _dp_test, _eo_test = main_worker()
+        p = Process(target=main_worker, args=(seed, result_queue, config, e, u, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train))
+        # Start the process
+        p.start()
+        # Append the process to the list
+        processes.append(p)
+
+    for p in processes:
+        p.join()
+    # Collect results from the queue
+    while not result_queue.empty():
+        (_acc_test, _best_auc_roc_test, _best_f1_s_test, _dp_test, _eo_test) = result_queue.get()
         acc_test.append(_acc_test)
         best_auc_roc_test.append(_best_auc_roc_test)
         best_f1_s_test.append(_best_f1_s_test)
