@@ -12,27 +12,18 @@ from data.Preprocessing import load_data
 import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results
 from result_stat.result_append import result_append
-from decorrelation import sin_scale_decorrelation3
+from decorrelation import pow_scale_decorrelation, sin_scale_decorrelation
 
 
-def main_worker():
-    print(config)
-    seed_everything(config['seed'])
+def main_worker(seed, config, E, U, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train):
+    seed_everything(seed)
     # device = 'cuda:{}'.format(config['cuda'])
     # torch.cuda.set_device(config['cuda'])
 
     # E, U = e.detach().clone(), u.detach().clone()
-    E, U, = e, u
 
-    net = Specformer_wrapper(nclass=1,
-                             nfeat=x.size(1),
-                             nlayer=config['nlayer'],
-                             hidden_dim=config['hidden_dim'],
-                             signal_dim=config['signal_dim'],
-                             nheads=config['num_heads'],
-                             tran_dropout=config['tran_dropout'],
-                             feat_dropout=config['feat_dropout'],
-                             prop_dropout=config['prop_dropout'],
+    net = Specformer_wrapper(nfeat=x.size(1),
+                             config=config,
                              shd_filter=config['shd_filter'] == 'T',
                              shd_trans=config['shd_trans'] == 'T').cuda()
     net.apply(init_params)
@@ -56,8 +47,8 @@ def main_worker():
         # cov = torch.tensor(0.0)
         ms_cor = 0.0
         if epoch >= config['epoch_fit']:
-            # output = orthogonal_projection(output, output_sens)
-            ms_cor = sin_scale_decorrelation3(output, output_sens, config)
+            # output = orthogonal_projection(output, output_sens, config)
+            ms_cor = sin_scale_decorrelation(output, output_sens, config)
 
         loss_sens = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train],
                                                   sens[idx_sens_train].unsqueeze(1).float())
@@ -120,7 +111,7 @@ def main_worker():
     return best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
@@ -170,8 +161,7 @@ if __name__ == '__main__':
 
     acc_test, best_auc_roc_test, best_f1_s_test, dp_test, eo_test = [], [], [], [], []
     for seed in config['seeds']:
-        config['seed'] = seed
-        _acc_test, _best_auc_roc_test, _best_f1_s_test, _dp_test, _eo_test = main_worker()
+        _acc_test, _best_auc_roc_test, _best_f1_s_test, _dp_test, _eo_test = main_worker(seed, config, e, u, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train)
         acc_test.append(_acc_test)
         best_auc_roc_test.append(_best_auc_roc_test)
         best_f1_s_test.append(_best_f1_s_test)
@@ -183,6 +173,8 @@ if __name__ == '__main__':
     best_f1_s_test = np.array(best_f1_s_test, dtype=float)
     dp_test = np.array(dp_test, dtype=float)
     eo_test = np.array(eo_test, dtype=float)
+
+    print(config)
 
     ACC = "{:.2f} $\pm$ {:.2f}".format(np.mean(acc_test), np.std(acc_test))
     AUC = "{:.2f} $\pm$ {:.2f}".format(np.mean(best_auc_roc_test), np.std(best_auc_roc_test))
@@ -197,3 +189,7 @@ if __name__ == '__main__':
           "EO: " + EO)
 
     result_append(ACC, AUC, F1, DP, EO, config)
+
+
+if __name__ == '__main__':
+    main()

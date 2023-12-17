@@ -91,24 +91,23 @@ class Filter(nn.Module):
 
 class Specformer(nn.Module):
 
-    def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, signal_dim=128, nheads=1,
-                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, norm='none'):
+    def __init__(self, nfeat, nclass=1, config=None):
         super(Specformer, self).__init__()
 
         self.feat_encoder = nn.Sequential(
-            nn.Linear(nfeat, hidden_dim),
+            nn.Linear(nfeat, config['hidden_dim']),
             # nn.ReLU(),
             # nn.Linear(hidden_dim, hidden_dim),
             # nn.ReLU(),
         )
-        self.classify = nn.Linear(signal_dim, nclass)
+        self.classify = nn.Linear(config['signal_dim'], nclass)
 
-        self.filter = Filter(hidden_dim=hidden_dim, nheads=nheads, tran_dropout=tran_dropout)
+        self.filter = Filter(hidden_dim=config['hidden_dim'], nheads=config['num_heads'], tran_dropout=config['tran_dropout'])
 
-        self.feat_dp1 = nn.Dropout(feat_dropout)
-        self.feat_dp2 = nn.Dropout(feat_dropout)
-        layers = [SpecLayer(hidden_dim, hidden_dim, prop_dropout) for i in range(nlayer - 1)]
-        layers.append(SpecLayer(hidden_dim, signal_dim, prop_dropout))
+        self.feat_dp1 = nn.Dropout(config['feat_dropout'])
+        self.feat_dp2 = nn.Dropout(config['feat_dropout'])
+        layers = [SpecLayer(config['hidden_dim'], config['hidden_dim'], config['prop_dropout']) for i in range(config['nlayer'] - 1)]
+        layers.append(SpecLayer(config['hidden_dim'], config['signal_dim'], config['prop_dropout']))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, e, u, x):
@@ -131,29 +130,12 @@ class Specformer(nn.Module):
 
 
 class Specformer_wrapper(nn.Module):
-    def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, signal_dim=128, nheads=1,
-                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, shd_filter=False, shd_trans=False):
+    def __init__(self, nfeat, config, shd_filter=False, shd_trans=False):
         super(Specformer_wrapper, self).__init__()
 
-        self.specformer_s = Specformer(nclass,
-                                       nfeat,
-                                       nlayer,
-                                       hidden_dim,
-                                       signal_dim,
-                                       nheads,
-                                       tran_dropout,
-                                       feat_dropout,
-                                       prop_dropout)
-
-        self.specformer_y = Specformer(nclass,
-                                       nfeat,
-                                       nlayer,
-                                       hidden_dim,
-                                       hidden_dim,
-                                       nheads,
-                                       tran_dropout,
-                                       feat_dropout,
-                                       prop_dropout)
+        self.specformer_s = Specformer(nfeat=nfeat, nclass=1, config=config)
+        config['signal_dim'] = config['hidden_dim']
+        self.specformer_y = Specformer(nfeat=nfeat, nclass=1, config=config)
 
         if shd_filter:
             print('Applying shd_filter...')

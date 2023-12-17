@@ -50,7 +50,7 @@ def pow_scale_decorrelation(output, output_sens, config):
 #     return ms_cor
 
 
-def sin_scale_decorrelation3(output, output_sens, config):
+def sin_scale_decorrelation(output, output_sens, config):
     # output, output_sens = F.sigmoid(output).squeeze(), F.sigmoid(output_sens).squeeze()
     output, output_sens = output.squeeze(), output_sens.squeeze()
 
