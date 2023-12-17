@@ -12,52 +12,7 @@ from data.Preprocessing import load_data
 import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results
 from result_stat.result_append import result_append
-
-
-def orthogonal_projection(output, output_sens):
-    # y_score, s_score = torch.sigmoid(output), torch.sigmoid(output_sens)
-    # cov = torch.abs(torch.mean((s_score - torch.mean(s_score)) * (y_score - torch.mean(y_score))))
-
-    output = output.squeeze()
-    output_mean = output.mean()
-    _output_sens = output_sens.squeeze()
-    _output_sens = _output_sens - _output_sens.mean()
-    output = ((output - output_mean) - config['orthogonality'] * ((output - output_mean) * _output_sens).sum() / (
-                _output_sens.pow(2).sum() + 1e-8) * _output_sens + output_mean).unsqueeze(-1)
-    return output
-
-
-def multi_scale_decorrelation(output, output_sens):
-    # y_score, s_score = torch.sigmoid(output), torch.sigmoid(output_sens)
-    # ms_cor = torch.abs(torch.mean((output_sens - torch.mean(output_sens)) * (output - torch.mean(output))))
-    ms_cor = 0.0
-    output, output_sens = output.squeeze(), output_sens.squeeze()
-    for p in config['ms_bank']:
-        _output, _output_sens = output.abs().pow(p) * (output / output.abs()), output_sens.abs().pow(p) * (output_sens / output_sens.abs())
-        # _output, _output_sens =output.pow(p), output_sens.pow(p)
-
-        # ms_cor = ms_cor + torch.abs(torch.mean((_output_sens - torch.mean(_output_sens)) * (_output - torch.mean(_output))))
-
-        _output, _output_sens = _output.unsqueeze(0), _output_sens.unsqueeze(0)
-        _output, _output_sens = _output - torch.mean(_output), _output_sens - torch.mean(_output_sens)
-        ms_cor = ms_cor + F.cosine_similarity(_output_sens, _output).abs().squeeze()
-
-    return ms_cor
-
-
-def multi_scale_decorrelation2(output, output_sens):
-    output, output_sens = output.squeeze(), output_sens.squeeze()
-    output_mat, output_sens_mat = [], []
-    for p in config['ms_bank']:
-        _output, _output_sens = output.abs().pow(p) * (output / output.abs()), output_sens.abs().pow(p) * (output_sens / output_sens.abs())
-        _output, _output_sens = _output.unsqueeze(0), _output_sens.unsqueeze(0)
-        output_mat.append(_output)
-        output_sens_mat.append(_output_sens)
-    output_mat, output_sens_mat = torch.cat(output_mat, dim=0), torch.cat(output_sens_mat, dim=0)
-    output_mat, output_sens_mat = output_mat - torch.mean(output_mat, dim=1, keepdim=True), output_sens_mat - torch.mean(output_sens_mat, dim=1, keepdim=True)
-    # ms_cor = F.cosine_similarity(output_sens_mat.unsqueeze(1), output_mat.unsqueeze(0)).abs().sum()
-    ms_cor = F.cosine_similarity(output_sens_mat, output_mat).abs().sum()
-    return ms_cor
+from decorrelation import sin_scale_decorrelation3
 
 
 def main_worker():
@@ -102,7 +57,7 @@ def main_worker():
         ms_cor = 0.0
         if epoch >= config['epoch_fit']:
             # output = orthogonal_projection(output, output_sens)
-            ms_cor = multi_scale_decorrelation(output, output_sens)
+            ms_cor = sin_scale_decorrelation3(output, output_sens, config)
 
         loss_sens = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train],
                                                   sens[idx_sens_train].unsqueeze(1).float())
@@ -169,7 +124,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='pokec_n')
+    parser.add_argument('--dataset', default='credit')
     parser.add_argument('--rank', type=int, default=0, help="result stat")
     args = parser.parse_args()
 

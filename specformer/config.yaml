@@ -68,7 +68,7 @@ credit:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
-    epoch_fit: 1000
+    epoch_fit: 500
     epoch_debias: 500
     lr: 0.001
     weight_decay: 0.00001
@@ -81,7 +81,7 @@ credit:
     decorrelation: 1.0
     orthogonality: 500.0
     signal_dim: 128
-    patience: 5
+    patience: 20
     shd_filter: 'F'
     shd_trans: 'F'
     label_number: 6000
