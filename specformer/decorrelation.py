@@ -55,7 +55,7 @@ def sin_scale_decorrelation3(output, output_sens, config):
     output, output_sens = output.squeeze(), output_sens.squeeze()
 
     def encoding(e):
-        div = torch.exp(torch.arange(0, 128, 2) * (-math.log(10000) / 128)).to(e.device)
+        div = torch.exp(torch.arange(0, 16, 2) * (-math.log(100) / 16)).to(e.device)
         pe = (e * 1.0).unsqueeze(1) * div
         return torch.cat((e.unsqueeze(1), torch.sin(pe), torch.cos(pe)), dim=1)
 

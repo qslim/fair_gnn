@@ -13,7 +13,7 @@ from data.Preprocessing import load_data
 import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results
 from result_stat.result_append import result_append
-from decorrelation import pow_scale_decorrelation
+from decorrelation import pow_scale_decorrelation, sin_scale_decorrelation3
 
 
 def main_worker(seed, result_queue, config, E, U, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train):
@@ -57,7 +57,7 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train, idx_val,
         ms_cor = 0.0
         if epoch >= config['epoch_fit']:
             # output = orthogonal_projection(output, output_sens, config)
-            ms_cor = pow_scale_decorrelation(output, output_sens, config)
+            ms_cor = sin_scale_decorrelation3(output, output_sens, config)
 
         loss_sens = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train],
                                                   sens[idx_sens_train].unsqueeze(1).float())
