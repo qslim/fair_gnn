@@ -49,7 +49,7 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train, idx_val,
         ms_cor = 0.0
         if epoch >= config['epoch_fit']:
             # output = orthogonal_projection(output, output_sens, config)
-            ms_cor = pow_scale_decorrelation(output, output_sens, config)
+            ms_cor = sin_scale_decorrelation(output, output_sens, config)
 
         loss_sens = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train],
                                                   sens[idx_sens_train].unsqueeze(1).float())

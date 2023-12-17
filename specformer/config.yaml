@@ -155,5 +155,5 @@ income:
     shd_trans: 'F'
     label_number: 3000
     sens_number: -1
-    ms_decor: 100.0
+    ms_decor: 10.0
     ms_bank: [0.5, 1.0, 1.5, 2.0]
