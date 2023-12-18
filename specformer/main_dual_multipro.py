@@ -48,6 +48,10 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train, idx_val,
         # cov = torch.tensor(0.0)
         ms_cor = 0.0
         if epoch >= config['epoch_fit']:
+            # config['ms_decor'] = 1000.0 for Credit, Income, German
+            # y_score, s_score = torch.sigmoid(output).squeeze(), torch.sigmoid(output_sens).squeeze()
+            # ms_cor = ((s_score - torch.mean(s_score)) * (y_score - torch.mean(y_score))).mean().abs()
+
             if config['decor_mode'] == 'orthogonal':
                 output = orthogonal_projection(output, output_sens, config)
             elif config['decor_mode'] == 'pow_scale':
