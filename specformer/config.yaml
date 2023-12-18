@@ -101,7 +101,7 @@ german:
     prop_dropout: 0.5
     norm: 'na'
     eps: [-0.5]
-    eigk: 64
+    eigk: 128
     decorrelation: 1.0
     orthogonality: 200.0
     signal_dim: 128
