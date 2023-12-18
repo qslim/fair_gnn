@@ -12,7 +12,7 @@ from data.Preprocessing import load_data
 import scipy as sp
 from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results
 from result_stat.result_append import result_append
-from decorrelation import pow_scale_decorrelation, sin_scale_decorrelation
+from decorrelation import pow_scale_decorrelation, sin_scale_decorrelation, orthogonal_projection
 
 
 def main_worker(seed, config, E, U, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train):
@@ -47,8 +47,14 @@ def main_worker(seed, config, E, U, x, labels, idx_train, idx_val, idx_test, sen
         # cov = torch.tensor(0.0)
         ms_cor = 0.0
         if epoch >= config['epoch_fit']:
-            # output = orthogonal_projection(output, output_sens, config)
-            ms_cor = sin_scale_decorrelation(output, output_sens, config)
+            if config['decor_mode'] == 'orthogonal':
+                output = orthogonal_projection(output, output_sens, config)
+            elif config['decor_mode'] == 'pow_scale':
+                ms_cor = pow_scale_decorrelation(output, output_sens, config)
+            elif config['decor_mode'] == 'sin_scale':
+                ms_cor = sin_scale_decorrelation(output, output_sens, config)
+            else:
+                raise ValueError('Unknown decor_mode!')
 
         loss_sens = F.binary_cross_entropy_with_logits(output_sens[idx_sens_train],
                                                   sens[idx_sens_train].unsqueeze(1).float())

@@ -11,12 +11,12 @@ nba:
     norm: 'layer'
     eps: [-0.2]
     eigk: 128
-    decorrelation: 0.0
     signal_dim: 64
     patience: 5
     label_number: 100
     sens_number: 50
     ms_decor: 0.0
+    decor_mode: 'pow_scale'
 pokec_z:
     nlayer: 3
     num_heads: 1
@@ -31,7 +31,6 @@ pokec_z:
     norm: 'layer'
     eps: [-0.5]
     eigk: 256
-    decorrelation: 1.0
     orthogonality: 10.0
     signal_dim: 128
     patience: 5
@@ -40,6 +39,7 @@ pokec_z:
     label_number: 500
     sens_number: 200
     ms_decor: 0.0
+    decor_mode: 'pow_scale'
 pokec_n:
     nlayer: 2
     num_heads: 1
@@ -54,7 +54,6 @@ pokec_n:
     norm: 'layer'
     eps: [-0.5]
     eigk: 128
-    decorrelation: 10.0
     orthogonality: 10.0
     signal_dim: 128
     patience: 5
@@ -64,6 +63,7 @@ pokec_n:
     sens_number: 200
     ms_decor: 0.1
     ms_bank: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0]
+    decor_mode: 'pow_scale'
 credit:
     nlayer: 2
     num_heads: 1
@@ -78,7 +78,6 @@ credit:
     norm: 'na'
     eps: [-0.5]
     eigk: 128
-    decorrelation: 1.0
     orthogonality: 500.0
     signal_dim: 128
     patience: 20
@@ -88,6 +87,7 @@ credit:
     sens_number: -1
     ms_decor: 10.0
     ms_bank: [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
+    decor_mode: 'pow_scale'
 german:
     nlayer: 2
     num_heads: 1
@@ -102,7 +102,6 @@ german:
     norm: 'na'
     eps: [-0.5]
     eigk: 128
-    decorrelation: 1.0
     orthogonality: 200.0
     signal_dim: 128
     patience: 20
@@ -112,6 +111,7 @@ german:
     sens_number: -1
     ms_decor: 1.0
     ms_bank: [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
+    decor_mode: 'pow_scale'
 bail:
     nlayer: 3
     num_heads: 1
@@ -125,7 +125,6 @@ bail:
     norm: 'na'
     eps: [-0.5]
     eigk: 256
-    decorrelation: 1.0
     orthogonality: 10.0
     signal_dim: 128
     patience: 5
@@ -134,6 +133,7 @@ bail:
     label_number: 100
     sens_number: -1
     ms_decor: 0.0
+    decor_mode: 'pow_scale'
 income:
     nlayer: 3
     num_heads: 1
@@ -148,7 +148,6 @@ income:
     norm: 'na'
     eps: [-0.5]
     eigk: 64
-    decorrelation: 1.0
     orthogonality: 100.0
     signal_dim: 128
     patience: 5
@@ -158,3 +157,4 @@ income:
     sens_number: -1
     ms_decor: 10.0
     ms_bank: [0.5, 1.0, 1.5, 2.0]
+    decor_mode: 'pow_scale'
