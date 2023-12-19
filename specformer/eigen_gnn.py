@@ -9,27 +9,26 @@ from torch.nn.init import xavier_uniform_, xavier_normal_, constant_
 
 
 class SineEncoding(nn.Module):
-    def __init__(self, num_basis):
+    def __init__(self, hidden_dim=128):
         super(SineEncoding, self).__init__()
-        self.constant = 2.0
-        self.num_basis = num_basis
+        # self.constant = 1.0
+        self.hidden_dim = hidden_dim
+        self.eig_w = nn.Linear(hidden_dim + 1, hidden_dim)
 
     def forward(self, e):
         # input:  [N]
         # output: [N, d]
 
-        assert (len(e.shape) == 1)
-        e = e * self.constant
-        # padding = torch.ones_like(e)
-        # eig_sign = torch.where(e >= 0, padding, padding * -1)
-        # eig_val_nosign = e.abs()
-        # eig_val_nosign = torch.where(eig_val_nosign > 1e-6, eig_val_nosign, torch.zeros_like(eig_val_nosign))  # Precision limitation
-        # eig_val_smoothed = eig_val_nosign.pow(3.0 / self.num_basis) * eig_sign
-        # eig_val_smoothed = e.pow(4.0 / self.num_basis)
-        eig_val_smoothed = e.abs().pow(4.0 / self.num_basis) * (e / e.abs())
-        eeig = torch.vander(eig_val_smoothed, N=self.num_basis, increasing=True)
+        # ee = e * self.constant
+        div = torch.arange(1, 33).to(e.device)
+        pe = e.unsqueeze(1) * div
+        sign = pe / pe.abs()
+        spec = [e.unsqueeze(1)]
+        for p in [0.5, 0.4, 0.3, 0.2]:
+            spec = spec + [pe.abs().pow(p) * sign]
+        eeig = torch.cat(spec, dim=1)
 
-        return eeig
+        return self.eig_w(eeig)
 
 
 class FeedForwardNetwork(nn.Module):
@@ -38,12 +37,9 @@ class FeedForwardNetwork(nn.Module):
         super(FeedForwardNetwork, self).__init__()
         self.ffn = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
-            nn.LayerNorm(hidden_dim),
-            # nn.BatchNorm1d(hidden_dim),
+            # nn.LayerNorm(hidden_dim),
             nn.GELU(),
             nn.Linear(hidden_dim, output_dim),
-            nn.LayerNorm(hidden_dim),
-            # nn.GELU(),
         )
 
     def forward(self, x):
@@ -59,7 +55,6 @@ class SpecLayer(nn.Module):
         self.ffn = nn.Sequential(
             nn.Linear(hidden_dim, signal_dim),
             nn.LayerNorm(signal_dim),
-            # nn.BatchNorm1d(signal_dim),
             nn.GELU()
             # nn.ELU()
             # nn.ReLU()
@@ -75,46 +70,54 @@ class Filter(nn.Module):
     def __init__(self, hidden_dim=128, nheads=1,
                  tran_dropout=0.0):
         super(Filter, self).__init__()
-        num_basis = hidden_dim
 
-        self.eig_encoder = SineEncoding(num_basis=num_basis)
-        self.ffn_dropout = nn.Dropout(tran_dropout)
-        self.ffn = FeedForwardNetwork(num_basis, hidden_dim, hidden_dim)
-        self.decoder_dropout = nn.Dropout(tran_dropout)
+        self.eig_encoder = SineEncoding(hidden_dim)
         self.decoder = nn.Linear(hidden_dim, 1)
+
+        self.mha_norm = nn.LayerNorm(hidden_dim)
+        self.ffn_norm = nn.LayerNorm(hidden_dim)
+        self.mha_dropout = nn.Dropout(tran_dropout)
+        self.ffn_dropout = nn.Dropout(tran_dropout)
+        self.mha = nn.MultiheadAttention(hidden_dim, nheads, tran_dropout)
+        self.ffn = FeedForwardNetwork(hidden_dim, hidden_dim, hidden_dim)
 
     def forward(self, e):
         eig = self.eig_encoder(e)  # [N, d]
-        eig = self.ffn_dropout(eig)
-        ffn_eig = self.ffn(eig)
-        # eig = eig + ffn_eig
-        eig = ffn_eig
-        eig = self.decoder_dropout(eig)
-        eig = self.decoder(eig)  # [N, m]
-        return eig
+        mha_eig = self.mha_norm(eig)
+        mha_eig, attn = self.mha(mha_eig, mha_eig, mha_eig)
+        eig = eig + self.mha_dropout(mha_eig)
+        ffn_eig = self.ffn_norm(eig)
+        ffn_eig = self.ffn(ffn_eig)
+        eig = eig + self.ffn_dropout(ffn_eig)
+        new_e = self.decoder(eig)  # [N, m]
+        return new_e
 
 
 class Specformer(nn.Module):
 
-    def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, signal_dim=128, nheads=1,
-                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0):
+    def __init__(self, nfeat, nclass=1, config=None):
         super(Specformer, self).__init__()
 
-        self.linear_encoder = nn.Linear(nfeat, hidden_dim)
-        self.classify = nn.Linear(signal_dim, nclass)
+        self.feat_encoder = nn.Sequential(
+            nn.Linear(nfeat, config['hidden_dim']),
+            # nn.ReLU(),
+            # nn.Linear(hidden_dim, hidden_dim),
+            # nn.ReLU(),
+        )
+        self.classify = nn.Linear(config['signal_dim'], nclass)
 
-        self.filter = Filter(hidden_dim=hidden_dim, nheads=nheads, tran_dropout=tran_dropout)
+        self.filter = Filter(hidden_dim=config['hidden_dim'], nheads=config['num_heads'], tran_dropout=config['tran_dropout'])
 
-        self.feat_dp1 = nn.Dropout(feat_dropout)
-        self.feat_dp2 = nn.Dropout(feat_dropout)
-        layers = [SpecLayer(hidden_dim, hidden_dim, prop_dropout) for i in range(nlayer - 1)]
-        layers.append(SpecLayer(hidden_dim, signal_dim, prop_dropout))
+        self.feat_dp1 = nn.Dropout(config['feat_dropout'])
+        self.feat_dp2 = nn.Dropout(config['feat_dropout'])
+        layers = [SpecLayer(config['hidden_dim'], config['hidden_dim'], config['prop_dropout']) for i in range(config['nlayer'] - 1)]
+        layers.append(SpecLayer(config['hidden_dim'], config['signal_dim'], config['prop_dropout']))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, e, u, x):
         ut = u.permute(1, 0)
         h = self.feat_dp1(x)
-        h = self.linear_encoder(h)
+        h = self.feat_encoder(h)
 
         filter = self.filter(e)
 
@@ -131,29 +134,12 @@ class Specformer(nn.Module):
 
 
 class Specformer_wrapper(nn.Module):
-    def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, signal_dim=128, nheads=1,
-                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, shd_filter=False, shd_trans=False):
+    def __init__(self, nfeat, config, shd_filter=False, shd_trans=False):
         super(Specformer_wrapper, self).__init__()
 
-        self.specformer_s = Specformer(nclass,
-                                       nfeat,
-                                       nlayer,
-                                       hidden_dim,
-                                       signal_dim,
-                                       nheads,
-                                       tran_dropout,
-                                       feat_dropout,
-                                       prop_dropout)
-
-        self.specformer_y = Specformer(nclass,
-                                       nfeat,
-                                       nlayer,
-                                       hidden_dim,
-                                       hidden_dim,
-                                       nheads,
-                                       tran_dropout,
-                                       feat_dropout,
-                                       prop_dropout)
+        self.specformer_s = Specformer(nfeat=nfeat, nclass=1, config=config)
+        config['signal_dim'] = config['hidden_dim']
+        self.specformer_y = Specformer(nfeat=nfeat, nclass=1, config=config)
 
         if shd_filter:
             print('Applying shd_filter...')
@@ -167,6 +153,3 @@ class Specformer_wrapper(nn.Module):
         pred_y = self.specformer_y(e, u, x)
 
         return pred_y, pred_s
-
-
-
