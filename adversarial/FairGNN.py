@@ -1,6 +1,6 @@
 import torch.nn as nn
 # from adversarial.eigen_gnn import EigenGNN
-from adversarial.eigen_trunc import EigenTrunc
+from adversarial.specformer import Specformer
 import torch
 import torch.nn.functional as F
 
@@ -12,13 +12,8 @@ class FairGNN(nn.Module):
 
         self.adver = config['adver']
         self.temp = config['temp']
-        nhid = config['hidden_dim']
-        # self.GNN = EigenGNN(nclass=1,
-        #                     nfeat=nfeat,
-        #                     config=config)
-        self.GNN = EigenTrunc(nclass=1,
-                            nfeat=nfeat,
-                            config=config)
+        nhid = config['signal_dim']
+        self.GNN = Specformer(nfeat=nfeat, nclass=1, config=config)
 
         # self.feat_dp2 = nn.Dropout(config['feat_dropout'])
         self.classifier = nn.Sequential(

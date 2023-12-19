@@ -9,9 +9,8 @@ nba:
     feat_dropout: 0.5
     prop_dropout: 0.5
     eps: [-0.2]
-    eig_which: 'LM'
-    eig_k: 128
-    decorrela_dim: 64
+    eigk: 128
+    signal_dim: 64
     patience: 5
     temp: 1.0
     adver: 0.0
@@ -30,9 +29,8 @@ pokec_z:
     feat_dropout: 0.5
     prop_dropout: 0.5
     eps: [-0.5]
-    eig_which: 'LM'
-    eig_k: 256
-    decorrela_dim: 128
+    eigk: 256
+    signal_dim: 128
     patience: 5
     temp: 1.0
     adver: 0.0
@@ -51,9 +49,8 @@ pokec_n:
     feat_dropout: 0.6
     prop_dropout: 0.6
     eps: [-0.5]
-    eig_which: 'LM'
-    eig_k: 256
-    decorrela_dim: 128
+    eigk: 256
+    signal_dim: 128
     patience: 5
     temp: 1.0
     adver: 0.0
@@ -72,9 +69,8 @@ credit:
     feat_dropout: 0.5
     prop_dropout: 0.5
     eps: [-0.5]
-    eig_which: 'LM'
-    eig_k: 128
-    decorrela_dim: 128
+    eigk: 128
+    signal_dim: 128
     patience: 5
     temp: 1.0
     adver: 20.0
@@ -93,9 +89,8 @@ german:
     feat_dropout: 0.5
     prop_dropout: 0.5
     eps: [-0.5]
-    eig_which: 'LM'
-    eig_k: 128
-    decorrela_dim: 128
+    eigk: 128
+    signal_dim: 128
     patience: 5
     temp: 1.0
     adver: 0.0
@@ -114,9 +109,8 @@ bail:
     feat_dropout: 0.5
     prop_dropout: 0.5
     eps: [-0.5]
-    eig_which: 'LM'
-    eig_k: 256
-    decorrela_dim: 128
+    eigk: 256
+    signal_dim: 128
     patience: 5
     temp: 1.0
     adver: 0.0
@@ -135,9 +129,8 @@ income:
     feat_dropout: 0.5
     prop_dropout: 0.5
     eps: [-0.5]
-    eig_which: 'LM'
-    eig_k: 64
-    decorrela_dim: 128
+    eigk: 64
+    signal_dim: 128
     patience: 5
     temp: 1.0
     adver: 100.0
