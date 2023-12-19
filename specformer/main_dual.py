@@ -112,13 +112,7 @@ def main_worker(seed, config, E, U, x, labels, idx_train, idx_val, idx_test, sen
               "mscor: {:.4f}".format(ms_cor),
               "{}/{:.4f}".format(best_epoch, best_test))
 
-    print("Test results:",
-          "[Acc: {:.4f}".format(best_test),
-          "Auc: {:.4f}".format(best_auc_roc_test),
-          "F1: {:.4f}]".format(best_f1_s_test),
-          "[DP: {:.4f}".format(best_dp_test),
-          "EO: {:.4f}]".format(best_eo_test))
-    return best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test
+    return best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test, best_epoch
 
 
 def main():
@@ -171,12 +165,20 @@ def main():
 
     acc_test, best_auc_roc_test, best_f1_s_test, dp_test, eo_test = [], [], [], [], []
     for seed in config['seeds']:
-        _acc_test, _best_auc_roc_test, _best_f1_s_test, _dp_test, _eo_test = main_worker(seed, config, e, u, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train)
+        _acc_test, _best_auc_roc_test, _best_f1_s_test, _dp_test, _eo_test, _best_epoch = main_worker(seed, config, e, u, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train)
         acc_test.append(_acc_test)
         best_auc_roc_test.append(_best_auc_roc_test)
         best_f1_s_test.append(_best_f1_s_test)
         dp_test.append(_dp_test)
         eo_test.append(_eo_test)
+
+        print("Test results:",
+              "[Acc: {:.4f}".format(_acc_test),
+              "Auc: {:.4f}".format(_best_auc_roc_test),
+              "F1: {:.4f}]".format(_best_f1_s_test),
+              "[DP: {:.4f}".format(_dp_test),
+              "EO: {:.4f}]".format(_eo_test),
+              "Epoch: {}".format(_best_epoch))
 
     acc_test = np.array(acc_test, dtype=float)
     best_auc_roc_test = np.array(best_auc_roc_test, dtype=float)

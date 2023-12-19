@@ -113,15 +113,8 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train, idx_val,
               "mscor: {:.4f}".format(ms_cor),
               "{}/{:.4f}".format(best_epoch, best_test))
 
-    print("Test results:",
-          "[Acc: {:.4f}".format(best_test),
-          "Auc: {:.4f}".format(best_auc_roc_test),
-          "F1: {:.4f}]".format(best_f1_s_test),
-          "[DP: {:.4f}".format(best_dp_test),
-          "EO: {:.4f}]".format(best_eo_test))
-
     # Put the results in the queue
-    result_queue.put((best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test))
+    result_queue.put((best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test, best_epoch))
     # return best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test
 
 
@@ -194,12 +187,20 @@ def main():
         p.join()
     # Collect results from the queue
     while not result_queue.empty():
-        (_acc_test, _best_auc_roc_test, _best_f1_s_test, _dp_test, _eo_test) = result_queue.get()
+        (_acc_test, _best_auc_roc_test, _best_f1_s_test, _dp_test, _eo_test, _best_epoch) = result_queue.get()
         acc_test.append(_acc_test)
         best_auc_roc_test.append(_best_auc_roc_test)
         best_f1_s_test.append(_best_f1_s_test)
         dp_test.append(_dp_test)
         eo_test.append(_eo_test)
+
+        print("Test results:",
+              "[Acc: {:.4f}".format(_acc_test),
+              "Auc: {:.4f}".format(_best_auc_roc_test),
+              "F1: {:.4f}]".format(_best_f1_s_test),
+              "[DP: {:.4f}".format(_dp_test),
+              "EO: {:.4f}]".format(_eo_test),
+              "Epoch: {}".format(_best_epoch))
 
     acc_test = np.array(acc_test, dtype=float)
     best_auc_roc_test = np.array(best_auc_roc_test, dtype=float)
