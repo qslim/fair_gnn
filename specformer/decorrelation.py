@@ -22,7 +22,7 @@ def pow_scale_decorrelation(output, output_sens, config):
     ms_cor = 0.0
     output, output_sens = output.squeeze(), output_sens.squeeze()
     for p in config['ms_bank']:
-        if config['dataset'] == 'income':
+        if config['dataset'] == 'income' or config['dataset'] == 'bail':
             _output, _output_sens = output.abs().pow(p) * (output / output.abs()), output_sens.abs().pow(p) * (output_sens / output_sens.abs())
         else:
             _output, _output_sens = output.abs().pow(p), output_sens.abs().pow(p)
