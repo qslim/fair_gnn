@@ -210,7 +210,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='bail')
+    parser.add_argument('--dataset', default='pokec_z')
     parser.add_argument('--rank', type=int, default=0, help="result stat")
     args = parser.parse_args()
 
@@ -239,9 +239,11 @@ def main():
     random.seed(20)
     random.shuffle(idx_train_0)
     random.shuffle(idx_train_1)
+    # if config['dataset'] == 'pokec_z' or config['dataset'] == 'pokec_n':
+    #     idx_train_0, idx_train_1 = idx_train_0[:250], idx_train_1[:250]
     if config['dataset'] == 'bail':
         pass
-    elif idx_train_0.shape[0] < idx_train_1.shape[0] or config['dataset'] == 'income':
+    elif idx_train_0.shape[0] < idx_train_1.shape[0] or config['dataset'] == 'income' or config['dataset'] == 'pokec_z':
         print("idx_train_0, idx_train_1 swap.")
         tmp = idx_train_0
         idx_train_0 = idx_train_1

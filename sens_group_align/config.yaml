@@ -19,8 +19,8 @@ pokec_z:
     nlayer: 3
     num_heads: 1
     hidden_dim: 128
-    epoch_fit: 500
-    epoch_debias: 5000
+    epoch_fit: 200
+    epoch_debias: 500
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.5
@@ -35,7 +35,8 @@ pokec_z:
     shd_trans: 'F'
     label_number: 999999
     sens_number: 999999
-    align_weight: 0.001
+    align_weight: 10.0
+    align_mode: 'l1'
 pokec_n:
     nlayer: 2
     num_heads: 1
