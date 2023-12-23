@@ -89,6 +89,8 @@ credit:
     ms_decor: 10.0
     ms_bank: [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
     decor_mode: 'pow_scale'
+    power: 0.5
+    step: 0.1
 german:
     nlayer: 2
     num_heads: 1
@@ -113,6 +115,8 @@ german:
     ms_decor: 1.0
     ms_bank: [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
     decor_mode: 'pow_scale'
+    power: 0.5
+    step: 0.1
 bail:
     nlayer: 3
     num_heads: 1
@@ -134,9 +138,11 @@ bail:
     shd_trans: 'F'
     label_number: 100
     sens_number: -1
-    ms_decor: 10.0
+    ms_decor: 2.0  # sin_scale=5.0; pow_scale=2.0; singl_pow=10.0
     ms_bank: [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
-    decor_mode: 'orthogonal'
+    decor_mode: 'pow_scale'
+    power: 0.3
+    step: 0.2
 income:
     nlayer: 3
     num_heads: 1
@@ -161,6 +167,8 @@ income:
     ms_decor: 10.0
     ms_bank: [0.5, 1.0, 1.5, 2.0]
     decor_mode: 'pow_scale'
+    power: 0.5
+    step: 0.1
 
 # income:
 #     nlayer: 3
@@ -186,3 +194,5 @@ income:
 #     ms_decor: 10.0
 #     ms_bank: [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
 #     decor_mode: 'pow_scale'
+#     power: 0.5
+#     step: 0.1

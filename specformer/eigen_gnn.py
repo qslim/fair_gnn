@@ -70,7 +70,7 @@ class Filter(nn.Module):
     def __init__(self, config):
         super(Filter, self).__init__()
 
-        self.eig_encoder = SineEncoding(hidden_dim=config['hidden_dim'])
+        self.eig_encoder = SineEncoding(hidden_dim=config['hidden_dim'], power=config['power'], step=config['step'])
         self.decoder = nn.Linear(config['hidden_dim'], 1)
 
         self.mha_norm = nn.LayerNorm(config['hidden_dim'])
