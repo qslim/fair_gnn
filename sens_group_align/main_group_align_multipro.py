@@ -210,7 +210,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='income')
+    parser.add_argument('--dataset', default='bail')
     parser.add_argument('--rank', type=int, default=0, help="result stat")
     args = parser.parse_args()
 
@@ -239,7 +239,9 @@ def main():
     random.seed(20)
     random.shuffle(idx_train_0)
     random.shuffle(idx_train_1)
-    if idx_train_0.shape[0] < idx_train_1.shape[0] or config['dataset'] == 'income':
+    if config['dataset'] == 'bail':
+        pass
+    elif idx_train_0.shape[0] < idx_train_1.shape[0] or config['dataset'] == 'income':
         print("idx_train_0, idx_train_1 swap.")
         tmp = idx_train_0
         idx_train_0 = idx_train_1
