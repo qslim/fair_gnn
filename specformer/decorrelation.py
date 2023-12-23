@@ -37,6 +37,21 @@ def pow_scale_decorrelation(output, output_sens, config):
     return ms_cor
 
 
+# def covariance(output, output_sens, config):
+#     cov = torch.cat((output, output_sens), dim=1).transpose(0, 1)
+#     return (cov[0][1] + cov[1][0]) / (cov[0][0] + cov[1][1])
+
+
+# def moment(output, output_sens, config):
+#     output, output_sens = output.squeeze(0), output_sens.squeeze(0)
+#     output_c, output_sens_c = output - torch.mean(output), output_sens - torch.mean(output_sens)
+#     ms_moment = 0.0
+#     for i in [1, 2, 3]:
+#         output_c, output_sens_c = output_c.pow(i), output_sens_c.pow(i)
+#         ms_moment = ms_moment + ((output_c * output_sens_c).mean() - (output_c.mean() * output_sens_c.mean())).abs()
+#     return ms_moment
+
+
 # def pow_scale_decorrelation2(output, output_sens, config):
 #     output, output_sens = output.squeeze(), output_sens.squeeze()
 #     output_mat, output_sens_mat = [], []
