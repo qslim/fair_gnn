@@ -9,23 +9,23 @@ from torch.nn.init import xavier_uniform_, xavier_normal_, constant_
 
 
 class SineEncoding(nn.Module):
-    def __init__(self, hidden_dim=128):
+    def __init__(self, hidden_dim=128, power=0.5, step=0.1):
         super(SineEncoding, self).__init__()
         # self.constant = 1.0
         self.hidden_dim = hidden_dim
         self.eig_w = nn.Linear(hidden_dim + 1, hidden_dim)
+        self.power = power
+        self.step = step
 
     def forward(self, e):
         # input:  [N]
         # output: [N, d]
 
         # ee = e * self.constant
-        div = torch.arange(1, 33).to(e.device)
+        div = torch.arange(1.0, self.hidden_dim * self.step + 1.0, self.step).to(e.device)
         pe = e.unsqueeze(1) * div
         sign = pe / pe.abs()
-        spec = [e.unsqueeze(1)]
-        for p in [0.5, 0.4, 0.3, 0.2]:
-            spec = spec + [pe.abs().pow(p) * sign]
+        spec = [e.unsqueeze(1), pe.abs().pow(self.power) * sign]
         eeig = torch.cat(spec, dim=1)
 
         return self.eig_w(eeig)
@@ -67,19 +67,18 @@ class SpecLayer(nn.Module):
 
 
 class Filter(nn.Module):
-    def __init__(self, hidden_dim=128, nheads=1,
-                 tran_dropout=0.0):
+    def __init__(self, config):
         super(Filter, self).__init__()
 
-        self.eig_encoder = SineEncoding(hidden_dim)
-        self.decoder = nn.Linear(hidden_dim, 1)
+        self.eig_encoder = SineEncoding(hidden_dim=config['hidden_dim'])
+        self.decoder = nn.Linear(config['hidden_dim'], 1)
 
-        self.mha_norm = nn.LayerNorm(hidden_dim)
-        self.ffn_norm = nn.LayerNorm(hidden_dim)
-        self.mha_dropout = nn.Dropout(tran_dropout)
-        self.ffn_dropout = nn.Dropout(tran_dropout)
-        self.mha = nn.MultiheadAttention(hidden_dim, nheads, tran_dropout)
-        self.ffn = FeedForwardNetwork(hidden_dim, hidden_dim, hidden_dim)
+        self.mha_norm = nn.LayerNorm(config['hidden_dim'])
+        self.ffn_norm = nn.LayerNorm(config['hidden_dim'])
+        self.mha_dropout = nn.Dropout(config['tran_dropout'])
+        self.ffn_dropout = nn.Dropout(config['tran_dropout'])
+        self.mha = nn.MultiheadAttention(config['hidden_dim'], config['num_heads'], config['tran_dropout'])
+        self.ffn = FeedForwardNetwork(config['hidden_dim'], config['hidden_dim'], config['hidden_dim'])
 
     def forward(self, e):
         eig = self.eig_encoder(e)  # [N, d]
@@ -106,7 +105,7 @@ class Specformer(nn.Module):
         )
         self.classify = nn.Linear(config['signal_dim'], nclass)
 
-        self.filter = Filter(hidden_dim=config['hidden_dim'], nheads=config['num_heads'], tran_dropout=config['tran_dropout'])
+        self.filter = Filter(config)
 
         self.feat_dp1 = nn.Dropout(config['feat_dropout'])
         self.feat_dp2 = nn.Dropout(config['feat_dropout'])
