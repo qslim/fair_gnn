@@ -34,7 +34,7 @@ class GCN_Body(nn.Module):
 
 
 class GCN_wrapper(nn.Module):
-    def __init__(self, nclass, nfeat, hidden_dim=128, feat_dropout=0.0):
+    def __init__(self, nfeat, hidden_dim=128, feat_dropout=0.0):
         super(GCN_wrapper, self).__init__()
 
         self.gnn_s = GCN(nfeat=nfeat,
@@ -113,6 +113,45 @@ class GAT(nn.Module):
         return x, logits
 
 
+class GAT_wrapper(nn.Module):
+    def __init__(self,
+                 num_layers,
+                 in_dim,
+                 num_hidden,
+                 heads,
+                 feat_drop,
+                 attn_drop,
+                 negative_slope,
+                 residual):
+        super(GAT_wrapper, self).__init__()
+
+        self.gnn_s = GAT(num_layers=num_layers,
+                         in_dim=in_dim,
+                         num_hidden=num_hidden,
+                         num_classes=1,
+                         heads=heads,
+                         feat_drop=feat_drop,
+                         attn_drop=attn_drop,
+                         negative_slope=negative_slope,
+                         residual=residual)
+
+        self.gnn_y = GAT(num_layers=num_layers,
+                         in_dim=in_dim,
+                         num_hidden=num_hidden,
+                         num_classes=1,
+                         heads=heads,
+                         feat_drop=feat_drop,
+                         attn_drop=attn_drop,
+                         negative_slope=negative_slope,
+                         residual=residual)
+
+    def forward(self, g, x):
+        pred_s, _ = self.gnn_s(g, x)
+        pred_y, _ = self.gnn_y(g, x)
+
+        return pred_y, pred_s
+
+
 
 class SGConv(nn.Module):
     def __init__(self,
@@ -177,3 +216,26 @@ class SGConv(nn.Module):
                 if self._cached:
                     self._cached_h = feat
             return self.fc(feat), feat
+
+
+class SGC_wrapper(nn.Module):
+    def __init__(self, nfeat, num_layers=2):
+        super(SGC_wrapper, self).__init__()
+
+        self.gnn_s = SGConv(in_feats=nfeat,
+                            out_feats=1,
+                            k=num_layers,
+                            cached=True,
+                            bias=True)
+
+        self.gnn_y = SGConv(in_feats=nfeat,
+                            out_feats=1,
+                            k=num_layers,
+                            cached=True,
+                            bias=True)
+
+    def forward(self, g, x):
+        pred_s, _ = self.gnn_s(g, x)
+        pred_y, _ = self.gnn_y(g, x)
+
+        return pred_y, pred_s

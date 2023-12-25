@@ -7,7 +7,7 @@ import sys
 import os
 from torch.multiprocessing import Process, set_start_method, Queue
 sys.path.append('..')
-from simple_gnn import GCN_wrapper
+from models import GCN_wrapper, GAT_wrapper, SGC_wrapper
 from data.Preprocessing import load_data
 import scipy as sp
 import dgl
@@ -27,6 +27,15 @@ def main_worker(seed, result_queue, config, g, x, labels, idx_train, idx_val, id
     net = GCN_wrapper(nfeat=x.size(1),
                       hidden_dim=config['hidden_dim'],
                       feat_dropout=config['feat_dropout']).cuda()
+    # net = GAT_wrapper(num_layers=config['nlayer'],
+    #                   in_dim=x.size(1),
+    #                   num_hidden=config['hidden_dim'],
+    #                   heads=1,
+    #                   feat_drop=config['feat_dropout'],
+    #                   attn_drop=config['feat_dropout'],
+    #                   negative_slope=0.2,
+    #                   residual=False).cuda()
+    # net = SGC_wrapper(nfeat=x.size(1), num_layers=config['nlayer']).cuda()
     net.apply(init_params)
     optimizer = torch.optim.Adam(net.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
     print(count_parameters(net))

@@ -35,7 +35,7 @@ def main_worker(config):
     # device = 'cuda:{}'.format(config['cuda'])
     # torch.cuda.set_device(config['cuda'])
 
-    net = GCN_wrapper(nclass=1, nfeat=x.size(1), hidden_dim=config['hidden_dim'], feat_dropout=config['feat_dropout']).cuda()
+    net = GCN_wrapper(nfeat=x.size(1), hidden_dim=config['hidden_dim'], feat_dropout=config['feat_dropout']).cuda()
     net.apply(init_params)
     optimizer = torch.optim.Adam(net.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
     print(count_parameters(net))
