@@ -21,8 +21,8 @@ pokec_z:
     nlayer: 3
     num_heads: 1
     hidden_dim: 128
-    epoch_fit: 60
-    epoch_debias: 20
+    epoch_fit: 300
+    epoch_debias: 200
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.5
@@ -33,14 +33,14 @@ pokec_z:
     eigk: 256
     orthogonality: 10.0
     signal_dim: 128
-    patience: 0
+    patience: 5
     shd_filter: 'F'
     shd_trans: 'F'
     label_number: 500
     sens_number: 200
     ms_decor: 1.0
     ms_bank: [0.5, 1.0, 1.5, 2.0]
-    decor_mode: 'pow_scale'
+    decor_mode: 'orthogonal'
 pokec_n:
     nlayer: 2
     num_heads: 1
