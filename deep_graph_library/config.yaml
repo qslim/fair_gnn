@@ -16,8 +16,8 @@ pokec_z:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
-    epoch_fit: 500
-    epoch_debias: 500
+    epoch_fit: 300
+    epoch_debias: 200
     lr: 0.001
     weight_decay: 0.00001
     feat_dropout: 0.5
