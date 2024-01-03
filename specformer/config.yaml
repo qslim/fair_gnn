@@ -2,6 +2,7 @@ nba:
     nlayer: 2
     num_heads: 1
     hidden_dim: 64
+    filter_dim: 64
     epoch: 1000
     lr: 0.001
     weight_decay: 0.00001
@@ -16,11 +17,12 @@ nba:
     label_number: 100
     sens_number: 50
     ms_decor: 0.0
-    decor_mode: 'pow_scale'
+    decor_mode: 'orthogonal'
 pokec_z:
     nlayer: 3
     num_heads: 1
     hidden_dim: 128
+    filter_dim: 128
     epoch_fit: 300
     epoch_debias: 200
     lr: 0.001
@@ -45,6 +47,7 @@ pokec_n:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
+    filter_dim: 128
     epoch_fit: 1000
     epoch_debias: 5000
     lr: 0.001
@@ -64,11 +67,12 @@ pokec_n:
     sens_number: 200
     ms_decor: 0.1
     ms_bank: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0]
-    decor_mode: 'pow_scale'
+    decor_mode: 'orthogonal'
 credit:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
+    filter_dim: 128
     epoch_fit: 500
     epoch_debias: 500
     lr: 0.001
@@ -88,13 +92,14 @@ credit:
     sens_number: -1
     ms_decor: 10.0
     ms_bank: [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
-    decor_mode: 'pow_scale'
+    decor_mode: 'orthogonal'
     power: 0.5
     step: 0.1
 german:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
+    filter_dim: 128
     epoch_fit: 500
     epoch_debias: 500
     lr: 0.001
@@ -114,13 +119,14 @@ german:
     sens_number: -1
     ms_decor: 1.0
     ms_bank: [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
-    decor_mode: 'pow_scale'
+    decor_mode: 'orthogonal'
     power: 0.5
     step: 0.1
 bail:
     nlayer: 3
     num_heads: 1
     hidden_dim: 128
+    filter_dim: 128
     epoch_fit: 200
     epoch_debias: 500
     lr: 0.0002
@@ -140,13 +146,14 @@ bail:
     sens_number: -1
     ms_decor: 2.0  # sin_scale=5.0; pow_scale=2.0; singl_pow=10.0
     ms_bank: [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
-    decor_mode: 'pow_scale'
+    decor_mode: 'orthogonal'
     power: 0.3
     step: 0.2
 income:
     nlayer: 3
     num_heads: 1
     hidden_dim: 64
+    filter_dim: 64
     epoch_fit: 500
     epoch_debias: 500
     lr: 0.001
@@ -166,7 +173,7 @@ income:
     sens_number: -1
     ms_decor: 10.0
     ms_bank: [0.5, 1.0, 1.5, 2.0]
-    decor_mode: 'pow_scale'
+    decor_mode: 'orthogonal'
     power: 0.5
     step: 0.1
 

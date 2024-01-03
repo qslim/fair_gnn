@@ -102,7 +102,7 @@ class Specformer(nn.Module):
         )
         self.classify = nn.Linear(config['signal_dim'], nclass)
 
-        self.filter = Filter(hidden_dim=config['hidden_dim'], nheads=config['num_heads'], tran_dropout=config['tran_dropout'])
+        self.filter = Filter(hidden_dim=config['filter_dim'], nheads=config['num_heads'], tran_dropout=config['tran_dropout'])
 
         self.feat_dp1 = nn.Dropout(config['feat_dropout'])
         self.feat_dp2 = nn.Dropout(config['feat_dropout'])
