@@ -4,15 +4,12 @@ import torch.nn.functional as F
 
 
 def orthogonal_projection(output, output_sens, config):
-    # y_score, s_score = torch.sigmoid(output), torch.sigmoid(output_sens)
-    # cov = torch.abs(torch.mean((s_score - torch.mean(s_score)) * (y_score - torch.mean(y_score))))
-
     output = output.squeeze()
     output_mean = output.mean()
-    _output_sens = output_sens.squeeze()
-    _output_sens = _output_sens - _output_sens.mean()
-    output = ((output - output_mean) - config['orthogonality'] * ((output - output_mean) * _output_sens).sum() / (
-                _output_sens.pow(2).sum() + 1e-8) * _output_sens + output_mean).unsqueeze(-1)
+    output_sens = output_sens.squeeze()
+    output_sens_c = output_sens - output_sens.mean()
+    output = ((output - output_mean) - config['orthogonality'] * ((output - output_mean) * output_sens_c).sum() / (
+                output_sens_c.pow(2).sum() + 1e-8) * output_sens_c + output_mean).unsqueeze(-1)
     return output
 
 
