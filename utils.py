@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import os
 from sklearn.metrics import f1_score, roc_auc_score, accuracy_score
+import torch.nn.functional as F
 
 
 def seed_everything(seed):
@@ -107,3 +108,9 @@ def accuracy_threshold(output, idx, labels, sens, threshold0, threshold1):
     correct = correct_0.sum() + correct_1.sum()
 
     return correct / (sens_idx_0.shape[0] + sens_idx_1.shape[0])
+
+
+def cosine_similarity(output, sens, idx):
+    _output, _sens = output.squeeze()[idx], sens.squeeze()[idx].float()
+    _output, _sens = _output - torch.mean(_output), _sens - torch.mean(_sens)
+    return F.cosine_similarity(_output.unsqueeze(0), _sens.unsqueeze(0)).squeeze().abs()
