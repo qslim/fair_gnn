@@ -233,7 +233,7 @@ def main():
           "EO: " + EO,
           "COS: " + COS)
 
-    result_append(ACC, AUC, F1, DP, EO, config)
+    result_append([ACC, AUC, F1, DP, EO, COS, config['rank'], int(time.time()), config], config)
 
 
 if __name__ == '__main__':

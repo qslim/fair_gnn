@@ -1,5 +1,6 @@
 import yaml
 import argparse
+import time
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -11,7 +12,7 @@ from models import GCN_wrapper, GAT_wrapper, SGC_wrapper
 from data.Preprocessing import load_data
 import scipy as sp
 import dgl
-from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results
+from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results, cosine_similarity
 from result_stat.result_append import result_append
 from decorrelation import pow_scale_decorrelation, sin_scale_decorrelation, orthogonal_projection
 
@@ -48,6 +49,7 @@ def main_worker(seed, result_queue, config, g, x, labels, idx_train, idx_val, id
     best_test = 0.0
     best_dp_test = 1e5
     best_eo_test = 1e5
+    best_cos = 100.0
     for epoch in range(config['epoch_fit'] + config['epoch_debias']):
         net.train()
         optimizer.zero_grad()
@@ -91,6 +93,9 @@ def main_worker(seed, result_queue, config, g, x, labels, idx_train, idx_val, id
         parity_test, equality_test = fair_metric(output, idx_test, labels, sens)
         auc_roc_test, f1_s_test, _ = evaluation_results(output, labels, idx_test)
 
+        cos = cosine_similarity(torch.sigmoid(output), sens, idx_test)
+        # cos = cosine_similarity(output, sens, idx_test)
+
         parity_test, equality_test = parity_test * 100.0, equality_test * 100.0
         auc_roc_test, f1_s_test = auc_roc_test * 100.0, f1_s_test * 100.0
 
@@ -104,6 +109,7 @@ def main_worker(seed, result_queue, config, g, x, labels, idx_train, idx_val, id
             best_test = acc_test.item()
             best_dp_test = parity_test
             best_eo_test = equality_test
+            best_cos = cos.item()
 
         print("Epoch {}:".format(epoch),
               # "cov: {:.4f}".format(cov.item()),
@@ -119,11 +125,12 @@ def main_worker(seed, result_queue, config, g, x, labels, idx_train, idx_val, id
               "[Sen-acc tr: {:.4f}".format(acc_train_sens),
               "va: {:.4f}]".format(acc_val_sens),
               "te: {:.4f}]".format(acc_test_sens),
-              "mscor: {:.4f}".format(ms_cor),
+              # "mscor: {:.4f}".format(ms_cor),
+              "cos: {:.4f}".format(cos),
               "{}/{:.4f}".format(best_epoch, best_test))
 
     # Put the results in the queue
-    result_queue.put((best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test, best_epoch))
+    result_queue.put((best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test, best_epoch, best_cos))
     # return best_test, best_auc_roc_test, best_f1_s_test, best_dp_test, best_eo_test
 
 
@@ -160,7 +167,7 @@ def main():
     except RuntimeError:
         pass
 
-    acc_test, best_auc_roc_test, best_f1_s_test, dp_test, eo_test = [], [], [], [], []
+    acc_test, best_auc_roc_test, best_f1_s_test, dp_test, eo_test, cos_test = [], [], [], [], [], []
     # Create a queue for collecting results
     result_queue = Queue()
     processes = []
@@ -175,12 +182,13 @@ def main():
         p.join()
     # Collect results from the queue
     while not result_queue.empty():
-        (_acc_test, _best_auc_roc_test, _best_f1_s_test, _dp_test, _eo_test, _best_epoch) = result_queue.get()
+        (_acc_test, _best_auc_roc_test, _best_f1_s_test, _dp_test, _eo_test, _best_epoch, _best_cos) = result_queue.get()
         acc_test.append(_acc_test)
         best_auc_roc_test.append(_best_auc_roc_test)
         best_f1_s_test.append(_best_f1_s_test)
         dp_test.append(_dp_test)
         eo_test.append(_eo_test)
+        cos_test.append(_best_cos)
 
         print("Test results:",
               "[Acc: {:.4f}".format(_acc_test),
@@ -188,13 +196,15 @@ def main():
               "F1: {:.4f}]".format(_best_f1_s_test),
               "[DP: {:.4f}".format(_dp_test),
               "EO: {:.4f}]".format(_eo_test),
-              "Epoch: {}".format(_best_epoch))
+              "Epoch: {}".format(_best_epoch),
+              "Cos: {:.4f}".format(_best_cos))
 
     acc_test = np.array(acc_test, dtype=float)
     best_auc_roc_test = np.array(best_auc_roc_test, dtype=float)
     best_f1_s_test = np.array(best_f1_s_test, dtype=float)
     dp_test = np.array(dp_test, dtype=float)
     eo_test = np.array(eo_test, dtype=float)
+    cos_test = np.array(cos_test, dtype=float)
 
     print(config)
 
@@ -203,14 +213,16 @@ def main():
     F1 = "{:.2f} $\pm$ {:.2f}".format(np.mean(best_f1_s_test), np.std(best_f1_s_test))
     DP = "{:.2f} $\pm$ {:.2f}".format(np.mean(dp_test), np.std(dp_test))
     EO = "{:.2f} $\pm$ {:.2f}".format(np.mean(eo_test), np.std(eo_test))
+    COS = "{:.4f} $\pm$ {:.4f}".format(np.mean(cos_test), np.std(cos_test))
     print("Mean over {} run:".format(len(config['seeds'])),
           "Acc: " + ACC,
           "Auc: " + AUC,
           "F1: " + F1,
           "DP: " + DP,
-          "EO: " + EO)
+          "EO: " + EO,
+          "COS: " + COS)
 
-    result_append(ACC, AUC, F1, DP, EO, config)
+    result_append([ACC, AUC, F1, DP, EO, COS, config['rank'], int(time.time()), config], config)
 
 
 if __name__ == '__main__':

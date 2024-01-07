@@ -3,8 +3,8 @@ import csv
 import os
 
 
-def result_append(ACC, AUC, F1, DP, EO, config):
-    rank = config['rank']
+def result_append(row, config):
+    # rank = config['rank']
     file_path = '../result_stat/'
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     file_path = file_path + config['dataset'] + '.csv'
@@ -13,5 +13,5 @@ def result_append(ACC, AUC, F1, DP, EO, config):
         csv_writer = csv.writer(csv_file)
         # if not file_exists:
         #     csv_writer.writerow(['ACC', 'AUC', 'F1', 'DP', 'EO', 'rank', 'time', 'config'])
-        csv_writer.writerow([ACC, AUC, F1, DP, EO, rank, int(time.time()), config])
+        csv_writer.writerow(row)
         csv_file.flush()
