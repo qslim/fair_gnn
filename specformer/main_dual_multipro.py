@@ -1,5 +1,6 @@
 import yaml
 import argparse
+import time
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -91,7 +92,7 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train, idx_val,
 
         # if loss_val < best_loss:
         #     best_loss = loss_val.item()
-        if epoch > config['epoch_fit'] + config['patience'] and acc_val > best_acc:
+        if (config['epoch_debias'] == 0 or epoch > config['epoch_fit'] + config['patience']) and acc_val > best_acc:
             best_acc = acc_val.item()
             best_epoch = epoch
             best_auc_roc_test = auc_roc_test.item()
