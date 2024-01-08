@@ -56,7 +56,7 @@ credit:
     weight_decay: 0.00001
     feat_dropout: 0.5
     norm: 'na'
-    orthogonality: 500.0
+    orthogonality: 200.0
     patience: 5
     label_number: 6000
     sens_number: -1

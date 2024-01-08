@@ -85,7 +85,7 @@ credit:
     eigk: 128
     orthogonality: 500.0
     signal_dim: 128
-    patience: 20
+    patience: 5
     shd_filter: 'F'
     shd_trans: 'F'
     label_number: 6000
