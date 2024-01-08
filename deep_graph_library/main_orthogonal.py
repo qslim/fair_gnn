@@ -154,12 +154,18 @@ if __name__ == '__main__':
     parser.add_argument('--seeds', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
     parser.add_argument('--dataset', default='pokec_n')
+    parser.add_argument('--rank', type=int, default=0, help="result stat")
     args = parser.parse_args()
 
     config = yaml.load(open('./config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
+    config['seeds'] = args.seeds
+    config['dataset'] = args.dataset
+    config['rank'] = args.rank
 
     adj, x, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = load_data(path_root='../',
-                                                                                   dataset=args.dataset)
+                                                                                   dataset=config['dataset'],
+                                                                                   label_number=config['label_number'],
+                                                                                   sens_number=config['sens_number'])
     assert (torch.equal(torch.abs(labels[idx_train] - 0.5) * 2.0, torch.ones_like(labels[idx_train])))
     assert (torch.equal(torch.abs(labels[idx_val] - 0.5) * 2.0, torch.ones_like(labels[idx_val])))
     assert (torch.equal(torch.abs(labels[idx_test] - 0.5) * 2.0, torch.ones_like(labels[idx_test])))
