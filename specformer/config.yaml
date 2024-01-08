@@ -48,19 +48,19 @@ pokec_n:
     num_heads: 1
     hidden_dim: 128
     filter_dim: 128
-    epoch_fit: 1000
-    epoch_debias: 5000
+    epoch_fit: 0
+    epoch_debias: 200
     lr: 0.001
-    weight_decay: 0.00001
+    weight_decay: 0.0001
     tran_dropout: 0.3
     feat_dropout: 0.6
     prop_dropout: 0.6
     norm: 'layer'
     eps: [-0.5]
-    eigk: 128
-    orthogonality: 10.0
+    eigk: 64
+    orthogonality: 100.0
     signal_dim: 128
-    patience: 5
+    patience: 0
     shd_filter: 'F'
     shd_trans: 'F'
     label_number: 500
