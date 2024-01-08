@@ -234,7 +234,10 @@ def main():
           "EO: " + EO,
           "COS: " + COS)
 
-    result_append([ACC, AUC, F1, DP, EO, COS, config['rank'], int(time.time()), config], config)
+    ACC_minmax = "({:.4f}, {:.4f})".format(np.min(acc_test), np.max(acc_test))
+    DP_minmax = "({:.4f}, {:.4f})".format(np.min(dp_test), np.max(dp_test))
+    EO_minmax = "({:.4f}, {:.4f})".format(np.min(eo_test), np.max(eo_test))
+    result_append([ACC, ACC_minmax, AUC, F1, DP, DP_minmax, EO, EO_minmax, COS, config['rank'], int(time.time()), config], config)
 
 
 if __name__ == '__main__':
