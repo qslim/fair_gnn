@@ -17,14 +17,15 @@ class FairGNN(nn.Module):
 
         # self.feat_dp2 = nn.Dropout(config['feat_dropout'])
         self.classifier = nn.Sequential(
-            nn.Linear(nhid, nhid),
+            # nn.Linear(nhid, nhid),
             # nn.LayerNorm(hidden_dim),
-            nn.GELU(),
+            # nn.GELU(),
             nn.Linear(nhid, 1))
         self.adv = nn.Sequential(
             nn.Linear(nhid, nhid),
             # nn.LayerNorm(hidden_dim),
-            nn.GELU(),
+            nn.BatchNorm1d(nhid),
+            nn.ReLU(),
             nn.Linear(nhid, 1))
 
         G_params = list(self.GNN.parameters()) + list(self.classifier.parameters())
