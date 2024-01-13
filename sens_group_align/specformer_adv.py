@@ -96,10 +96,10 @@ class Classifier(nn.Module):
     def __init__(self, signal_dim, hidden_dim, nclass=1):
         super(Classifier, self).__init__()
         self.ffn = nn.Sequential(
-            nn.Linear(signal_dim, hidden_dim),
-            # nn.LayerNorm(hidden_dim),
-            nn.GELU(),
-            nn.Linear(hidden_dim, nclass),
+            # nn.Linear(signal_dim, hidden_dim),
+            # # nn.LayerNorm(hidden_dim),
+            # nn.GELU(),
+            nn.Linear(signal_dim, nclass),
         )
 
     def forward(self, x):
@@ -114,7 +114,7 @@ class Discriminator(nn.Module):
         self.ffn = nn.Sequential(
             nn.Linear(signal_dim, hidden_dim),
             # nn.LayerNorm(hidden_dim),
-            nn.GELU(),
+            nn.ReLU(),
             nn.Linear(hidden_dim, nclass),
         )
 

@@ -7,15 +7,18 @@ from torch import linalg
 import sys
 import os
 from torch.multiprocessing import Process, set_start_method, Queue
+
 sys.path.append('..')
 from specformer_adv import Specformer, Classifier, Discriminator
 from data.Preprocessing import load_data
 import scipy as sp
-from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results, group_by_attr
+from utils import seed_everything, init_params, count_parameters, accuracy, fair_metric, evaluation_results, \
+    group_by_attr
 from result_stat.result_append import result_append
 
 
-def main_worker(seed, result_queue, config, E, U, x, labels, idx_train_0, idx_train_1, idx_val, idx_test, sens, idx_sens_train):
+def main_worker(seed, result_queue, config, E, U, x, labels, idx_train_0, idx_train_1, idx_val, idx_test, sens,
+                idx_sens_train):
     seed_everything(seed)
     # device = 'cuda:{}'.format(config['cuda'])
     # torch.cuda.set_device(config['cuda'])
@@ -66,7 +69,6 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train_0, idx_tr
     params_discriminator = list(discriminator.parameters())
     optimizer_d = torch.optim.Adam(params_discriminator, lr=config['lr'], weight_decay=config['weight_decay'])
 
-
     best_acc = 0.0
     best_epoch = -1
     best_auc_roc_test = 0.0
@@ -74,9 +76,9 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train_0, idx_tr
     best_test = 0.0
     best_dp_test = 1e5
     best_eo_test = 1e5
-    for epoch in range(config['epoch_fit'] + config['epoch_debias']):
+    for epoch in range(config['epoch_debias']):
         # train classifier
-        for epoch_c in range(0, 5):
+        for epoch_c in range(0, 1):
             classifier0.train()
             classifier1.train()
             net_sen0.train()
@@ -95,18 +97,20 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train_0, idx_tr
             optimizer_c.step()
 
         # train discriminator to recognize the sensitive group
-        for epoch_d in range(0, 5):
+        for epoch_d in range(0, 1):
             discriminator.train()
             optimizer_d.zero_grad()
             H_sen0, H_sen1 = net_sen0(E, U, x).detach(), net_sen1(E, U, x).detach()
             H_two = torch.cat((H_sen0, H_sen1), dim=0)
             output_d = discriminator(H_two)
-            loss_d = F.binary_cross_entropy_with_logits(output_d, torch.cat((torch.zeros_like(labels), torch.ones_like(labels)), dim=0).unsqueeze(1).float())
+            loss_d = F.binary_cross_entropy_with_logits(output_d,
+                                                        torch.cat((torch.zeros_like(labels), torch.ones_like(labels)),
+                                                                  dim=0).unsqueeze(1).float())
             loss_d.backward()
             optimizer_d.step()
 
         # train generator to fool discriminator
-        for epoch_g in range(0, 5):
+        for epoch_g in range(0, 1):
             net_sen0.train()
             net_sen1.train()
             discriminator.eval()
@@ -114,9 +118,7 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train_0, idx_tr
             H_sen0, H_sen1 = net_sen0(E, U, x), net_sen1(E, U, x)
             H_two = torch.cat((H_sen0, H_sen1), dim=0)
             output_d = discriminator(H_two)
-            # loss_g = -F.binary_cross_entropy_with_logits(output_d,
-            #                                              torch.cat((torch.zeros_like(labels), torch.ones_like(labels)),
-            #                                                        dim=0))
+            # loss_g = -F.binary_cross_entropy_with_logits(output_d, torch.cat((torch.zeros_like(labels), torch.ones_like(labels)), dim=0).unsqueeze(1).float())
             loss_g = F.mse_loss(output_d, 0.5 * torch.ones_like(output_d))
             loss_g.backward()
             optimizer_g.step()
@@ -143,7 +145,8 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train_0, idx_tr
 
         # if loss_val < best_loss:
         #     best_loss = loss_val.item()
-        if epoch > config['epoch_fit'] + config['patience'] and acc_val_sen0 > best_acc:
+        # if epoch > config['epoch_fit'] + config['patience'] and acc_val_sen0 > best_acc:
+        if acc_val_sen0 > best_acc:
             best_acc = acc_val_sen0.item()
             best_epoch = epoch
             best_auc_roc_test = auc_roc_test.item()
@@ -175,7 +178,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', default=[0])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='german')
+    parser.add_argument('--dataset', default='bail')
     parser.add_argument('--rank', type=int, default=0, help="result stat")
     args = parser.parse_args()
 
@@ -213,8 +216,9 @@ def main():
         tmp = idx_train_0
         idx_train_0 = idx_train_1
         idx_train_1 = tmp
-    print("idx_train: {}, idx_train_0: {}, idx_train_1: {}".format(idx_train.shape[0], idx_train_0.shape[0], idx_train_1.shape[0]))
-    
+    print("idx_train: {}, idx_train_0: {}, idx_train_1: {}".format(idx_train.shape[0], idx_train_0.shape[0],
+                                                                   idx_train_1.shape[0]))
+
     assert (len(list(set(idx_train_0.cpu().numpy()) & set(idx_train_1.cpu().numpy()))) == 0)
     assert (len(list(set(idx_train_0.cpu().numpy()) & set(idx_val.cpu().numpy()))) == 0)
     assert (len(list(set(idx_train_0.cpu().numpy()) & set(idx_test.cpu().numpy()))) == 0)
@@ -258,7 +262,8 @@ def main():
     result_queue = Queue()
     processes = []
     for seed in config['seeds']:
-        p = Process(target=main_worker, args=(seed, result_queue, config, e, u, x, labels, idx_train_0, idx_train_1, idx_val, idx_test, sens, idx_sens_train))
+        p = Process(target=main_worker, args=(
+        seed, result_queue, config, e, u, x, labels, idx_train_0, idx_train_1, idx_val, idx_test, sens, idx_sens_train))
         # Start the process
         p.start()
         # Append the process to the list

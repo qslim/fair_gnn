@@ -107,8 +107,8 @@ bail:
     nlayer: 3
     num_heads: 1
     hidden_dim: 128
-    epoch_fit: 200
-    epoch_debias: 200
+    epoch_fit: 0
+    epoch_debias: 1500
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.5
@@ -117,8 +117,8 @@ bail:
     norm: 'none'
     eps: [-0.5]
     eigk: 256
-    signal_dim: 128
-    patience: 20
+    signal_dim: 4
+    patience: 0
     shd_filter: 'F'
     shd_trans: 'F'
     label_number: 100
