@@ -17,6 +17,88 @@ from utils import seed_everything, init_params, count_parameters, accuracy, fair
 from result_stat.result_append import result_append
 
 
+def train_classifier_and_generator(num_epoch, classifier0, classifier1, net_sen0, net_sen1, optimizer_c, optimizer_g,
+                                   E, U, x,
+                                   idx_train_0, idx_train_1, labels):
+    for epoch_c in range(0, num_epoch):
+        classifier0.train()
+        classifier1.train()
+        net_sen0.train()
+        net_sen1.train()
+        optimizer_c.zero_grad()
+        optimizer_g.zero_grad()
+        H_sen0, H_sen1 = net_sen0(E, U, x), net_sen1(E, U, x)
+        logit_sen0, logit_sen1 = classifier0(H_sen0), classifier1(H_sen1)
+        loss_sen0 = F.binary_cross_entropy_with_logits(logit_sen0[idx_train_0],
+                                                       labels[idx_train_0].unsqueeze(1).float())
+        loss_sen1 = F.binary_cross_entropy_with_logits(logit_sen1[idx_train_1],
+                                                       labels[idx_train_1].unsqueeze(1).float())
+        loss_c = loss_sen0 + loss_sen1
+        loss_c.backward()
+        optimizer_g.step()
+        optimizer_c.step()
+    return logit_sen0, logit_sen1
+
+
+def train_discriminator(num_epoch, discriminator, optimizer_d, net_sen0, net_sen1,
+                        E, U, x, labels):
+    for epoch_d in range(0, num_epoch):
+        discriminator.train()
+        optimizer_d.zero_grad()
+        H_sen0, H_sen1 = net_sen0(E, U, x).detach(), net_sen1(E, U, x).detach()
+        H_two = torch.cat((H_sen0, H_sen1), dim=0)
+        output_d = discriminator(H_two)
+        loss_d = F.binary_cross_entropy_with_logits(output_d,
+                                                    torch.cat((torch.zeros_like(labels), torch.ones_like(labels)),
+                                                              dim=0).unsqueeze(1).float())
+        loss_d.backward()
+        optimizer_d.step()
+
+
+def train_generator_to_fool_discriminator(num_epoch, net_sen0, net_sen1, discriminator, optimizer_g,
+                                          E, U, x):
+    for epoch_g in range(0, num_epoch):
+        net_sen0.train()
+        net_sen1.train()
+        discriminator.eval()
+        optimizer_g.zero_grad()
+        H_sen0, H_sen1 = net_sen0(E, U, x), net_sen1(E, U, x)
+        H_two = torch.cat((H_sen0, H_sen1), dim=0)
+        output_d = discriminator(H_two)
+        # loss_g = -F.binary_cross_entropy_with_logits(output_d, torch.cat((torch.zeros_like(labels), torch.ones_like(labels)), dim=0).unsqueeze(1).float())
+        loss_g = F.mse_loss(output_d, 0.5 * torch.ones_like(output_d))
+        loss_g.backward()
+        optimizer_g.step()
+
+
+def train_classifier_and_generator_and_fool_discriminator(num_epoch, classifier0, classifier1, net_sen0, net_sen1, discriminator, optimizer_c, optimizer_g,
+                                                          E, U, x,
+                                                          idx_train_0, idx_train_1, labels):
+    for epoch_c in range(0, num_epoch):
+        classifier0.train()
+        classifier1.train()
+        net_sen0.train()
+        net_sen1.train()
+        discriminator.eval()
+        optimizer_c.zero_grad()
+        optimizer_g.zero_grad()
+        H_sen0, H_sen1 = net_sen0(E, U, x), net_sen1(E, U, x)
+        logit_sen0, logit_sen1 = classifier0(H_sen0), classifier1(H_sen1)
+        loss_sen0 = F.binary_cross_entropy_with_logits(logit_sen0[idx_train_0],
+                                                       labels[idx_train_0].unsqueeze(1).float())
+        loss_sen1 = F.binary_cross_entropy_with_logits(logit_sen1[idx_train_1],
+                                                       labels[idx_train_1].unsqueeze(1).float())
+        H_two = torch.cat((H_sen0, H_sen1), dim=0)
+        output_d = discriminator(H_two)
+        # loss_g = -F.binary_cross_entropy_with_logits(output_d, torch.cat((torch.zeros_like(labels), torch.ones_like(labels)), dim=0).unsqueeze(1).float())
+        loss_g = F.mse_loss(output_d, 0.5 * torch.ones_like(output_d))
+        loss_c = loss_sen0 + loss_sen1 + loss_g
+        loss_c.backward()
+        optimizer_g.step()
+        optimizer_c.step()
+    return logit_sen0, logit_sen1
+
+
 def main_worker(seed, result_queue, config, E, U, x, labels, idx_train_0, idx_train_1, idx_val, idx_test, sens,
                 idx_sens_train):
     seed_everything(seed)
@@ -76,52 +158,30 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train_0, idx_tr
     best_test = 0.0
     best_dp_test = 1e5
     best_eo_test = 1e5
+
+    # # train classifier
+    # _, _ = train_classifier_and_generator(50, classifier0, classifier1, net_sen0, net_sen1, optimizer_c, optimizer_g,
+    #                                       E, U, x,
+    #                                       idx_train_0, idx_train_1, labels)
+
+    # # train discriminator to recognize the sensitive group
+    # train_discriminator(50, discriminator, optimizer_d, net_sen0, net_sen1,
+    #                     E, U, x, labels)
+
     for epoch in range(config['epoch_debias']):
-        # train classifier
-        for epoch_c in range(0, config['epoch_c']):
-            classifier0.train()
-            classifier1.train()
-            net_sen0.train()
-            net_sen1.train()
-            optimizer_c.zero_grad()
-            optimizer_g.zero_grad()
-            H_sen0, H_sen1 = net_sen0(E, U, x), net_sen1(E, U, x)
-            logit_sen0, logit_sen1 = classifier0(H_sen0), classifier1(H_sen1)
-            loss_sen0 = F.binary_cross_entropy_with_logits(logit_sen0[idx_train_0],
-                                                           labels[idx_train_0].unsqueeze(1).float())
-            loss_sen1 = F.binary_cross_entropy_with_logits(logit_sen1[idx_train_1],
-                                                           labels[idx_train_1].unsqueeze(1).float())
-            loss_c = loss_sen0 + loss_sen1
-            loss_c.backward()
-            optimizer_g.step()
-            optimizer_c.step()
+
+        # train classifier and generator and fool discriminator
+        logit_sen0, logit_sen1 = train_classifier_and_generator_and_fool_discriminator(config['epoch_c'], classifier0, classifier1, net_sen0, net_sen1, discriminator, optimizer_c, optimizer_g,
+                                                                                       E, U, x,
+                                                                                       idx_train_0, idx_train_1, labels)
 
         # train discriminator to recognize the sensitive group
-        for epoch_d in range(0, config['epoch_d']):
-            discriminator.train()
-            optimizer_d.zero_grad()
-            H_sen0, H_sen1 = net_sen0(E, U, x).detach(), net_sen1(E, U, x).detach()
-            H_two = torch.cat((H_sen0, H_sen1), dim=0)
-            output_d = discriminator(H_two)
-            loss_d = F.binary_cross_entropy_with_logits(output_d,
-                                                        torch.cat((torch.zeros_like(labels), torch.ones_like(labels)),
-                                                                  dim=0).unsqueeze(1).float())
-            loss_d.backward()
-            optimizer_d.step()
+        train_discriminator(config['epoch_d'], discriminator, optimizer_d, net_sen0, net_sen1,
+        E, U, x, labels)
 
-        # train generator to fool discriminator
-        for epoch_g in range(0, config['epoch_g']):
-            net_sen0.train()
-            net_sen1.train()
-            discriminator.eval()
-            optimizer_g.zero_grad()
-            H_sen0, H_sen1 = net_sen0(E, U, x), net_sen1(E, U, x)
-            H_two = torch.cat((H_sen0, H_sen1), dim=0)
-            output_d = discriminator(H_two)
-            # loss_g = -F.binary_cross_entropy_with_logits(output_d, torch.cat((torch.zeros_like(labels), torch.ones_like(labels)), dim=0).unsqueeze(1).float())
-            loss_g = F.mse_loss(output_d, 0.5 * torch.ones_like(output_d))
-            loss_g.backward()
-            optimizer_g.step()
+        # # train generator to fool discriminator
+        # train_generator_to_fool_discriminator(config['epoch_g'], net_sen0, net_sen1, discriminator, optimizer_g,
+        #                                       E, U, x)
 
         acc_train_sen0 = accuracy(logit_sen0[idx_train_0], labels[idx_train_0]) * 100.0
         acc_train_sen1 = accuracy(logit_sen1[idx_train_1], labels[idx_train_1]) * 100.0
@@ -163,8 +223,8 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train_0, idx_tr
               "te: {:.4f}]".format(acc_test_sen1.item()),
               "[DP: {:.4f}".format(parity_test),
               "EO: {:.4f}]".format(equality_test),
-              "ali: {:.4f}".format(linalg.vector_norm(H_sen0 - H_sen1, dim=1).mean()),
-              "std: {:.4f}".format(H_sen0.std(dim=1).mean()),
+              # "ali: {:.4f}".format(linalg.vector_norm(H_sen0 - H_sen1, dim=1).mean()),
+              # "std: {:.4f}".format(H_sen0.std(dim=1).mean()),
               "{}/{:.4f}".format(best_epoch, best_test))
 
     # return fit_label(H_sen0)
