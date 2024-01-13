@@ -1,26 +1,11 @@
-nba:
-    nlayer: 2
-    num_heads: 1
-    hidden_dim: 64
-    epoch: 1000
-    lr: 0.001
-    weight_decay: 0.00001
-    tran_dropout: 0.3
-    feat_dropout: 0.5
-    prop_dropout: 0.5
-    norm: 'none'
-    eps: [-0.2]
-    eigk: 128
-    signal_dim: 64
-    patience: 5
-    label_number: 100
-    sens_number: 50
 pokec_z:
     nlayer: 3
     num_heads: 1
     hidden_dim: 128
-    epoch_fit: 200
     epoch_debias: 500
+    epoch_c: 1
+    epoch_d: 1
+    epoch_g: 1
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.5
@@ -41,8 +26,10 @@ pokec_n:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
-    epoch_fit: 500
     epoch_debias: 5000
+    epoch_c: 1
+    epoch_d: 1
+    epoch_g: 1
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.3
@@ -63,8 +50,10 @@ credit:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
-    epoch_fit: 500
-    epoch_debias: 500
+    epoch_debias: 150
+    epoch_c: 1
+    epoch_d: 5
+    epoch_g: 5
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.5
@@ -85,8 +74,10 @@ german:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
-    epoch_fit: 500
     epoch_debias: 500
+    epoch_c: 1
+    epoch_d: 1
+    epoch_g: 1
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.5
@@ -107,8 +98,10 @@ bail:
     nlayer: 3
     num_heads: 1
     hidden_dim: 128
-    epoch_fit: 0
     epoch_debias: 1500
+    epoch_c: 1
+    epoch_d: 1
+    epoch_g: 1
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.5
@@ -129,8 +122,10 @@ income:
     nlayer: 2
     num_heads: 1
     hidden_dim: 128
-    epoch_fit: 500
     epoch_debias: 100
+    epoch_c: 1
+    epoch_d: 1
+    epoch_g: 1
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.5

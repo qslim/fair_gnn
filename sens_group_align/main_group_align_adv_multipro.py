@@ -78,7 +78,7 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train_0, idx_tr
     best_eo_test = 1e5
     for epoch in range(config['epoch_debias']):
         # train classifier
-        for epoch_c in range(0, 1):
+        for epoch_c in range(0, config['epoch_c']):
             classifier0.train()
             classifier1.train()
             net_sen0.train()
@@ -97,7 +97,7 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train_0, idx_tr
             optimizer_c.step()
 
         # train discriminator to recognize the sensitive group
-        for epoch_d in range(0, 1):
+        for epoch_d in range(0, config['epoch_d']):
             discriminator.train()
             optimizer_d.zero_grad()
             H_sen0, H_sen1 = net_sen0(E, U, x).detach(), net_sen1(E, U, x).detach()
@@ -110,7 +110,7 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train_0, idx_tr
             optimizer_d.step()
 
         # train generator to fool discriminator
-        for epoch_g in range(0, 1):
+        for epoch_g in range(0, config['epoch_g']):
             net_sen0.train()
             net_sen1.train()
             discriminator.eval()
@@ -145,8 +145,7 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train_0, idx_tr
 
         # if loss_val < best_loss:
         #     best_loss = loss_val.item()
-        # if epoch > config['epoch_fit'] + config['patience'] and acc_val_sen0 > best_acc:
-        if acc_val_sen0 > best_acc:
+        if epoch > config['patience'] and acc_val_sen0 > best_acc:
             best_acc = acc_val_sen0.item()
             best_epoch = epoch
             best_auc_roc_test = auc_roc_test.item()
@@ -176,9 +175,9 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train_0, idx_tr
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--seeds', default=[0])
+    parser.add_argument('--seeds', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='bail')
+    parser.add_argument('--dataset', default='credit')
     parser.add_argument('--rank', type=int, default=0, help="result stat")
     args = parser.parse_args()
 
