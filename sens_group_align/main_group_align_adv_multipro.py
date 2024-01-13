@@ -170,18 +170,23 @@ def main_worker(seed, result_queue, config, E, U, x, labels, idx_train_0, idx_tr
 
     for epoch in range(config['epoch_debias']):
 
-        # train classifier and generator and fool discriminator
-        logit_sen0, logit_sen1 = train_classifier_and_generator_and_fool_discriminator(config['epoch_c'], classifier0, classifier1, net_sen0, net_sen1, discriminator, optimizer_c, optimizer_g,
-                                                                                       E, U, x,
-                                                                                       idx_train_0, idx_train_1, labels)
+        # # train classifier and generator and fool discriminator
+        # logit_sen0, logit_sen1 = train_classifier_and_generator_and_fool_discriminator(config['epoch_c'], classifier0, classifier1, net_sen0, net_sen1, discriminator, optimizer_c, optimizer_g,
+        #                                                                                E, U, x,
+        #                                                                                idx_train_0, idx_train_1, labels)
+
+        # train classifier and generator
+        logit_sen0, logit_sen1 = train_classifier_and_generator(config['epoch_c'], classifier0, classifier1, net_sen0, net_sen1, optimizer_c, optimizer_g,
+                                                                E, U, x,
+                                                                idx_train_0, idx_train_1, labels)
 
         # train discriminator to recognize the sensitive group
         train_discriminator(config['epoch_d'], discriminator, optimizer_d, net_sen0, net_sen1,
-        E, U, x, labels)
+                            E, U, x, labels)
 
-        # # train generator to fool discriminator
-        # train_generator_to_fool_discriminator(config['epoch_g'], net_sen0, net_sen1, discriminator, optimizer_g,
-        #                                       E, U, x)
+        # train generator to fool discriminator
+        train_generator_to_fool_discriminator(config['epoch_g'], net_sen0, net_sen1, discriminator, optimizer_g,
+                                              E, U, x)
 
         acc_train_sen0 = accuracy(logit_sen0[idx_train_0], labels[idx_train_0]) * 100.0
         acc_train_sen1 = accuracy(logit_sen1[idx_train_1], labels[idx_train_1]) * 100.0
@@ -237,7 +242,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--seeds', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     parser.add_argument('--cuda', type=int, default=-1)
-    parser.add_argument('--dataset', default='credit')
+    parser.add_argument('--dataset', default='german')
     parser.add_argument('--rank', type=int, default=0, help="result stat")
     args = parser.parse_args()
 
