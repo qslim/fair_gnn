@@ -1,5 +1,5 @@
 import torch.nn as nn
-# from adversarial.eigen_gnn import EigenGNN
+# from adversarial_old.eigen_gnn import EigenGNN
 from adversarial.specformer import Specformer
 import torch
 import torch.nn.functional as F
