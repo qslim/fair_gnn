@@ -106,6 +106,7 @@ def load_credit(dataset, sens_attr="Age", predict_attr="NoDefaultNextMonth", pat
     idx_test = np.append(label_idx_0[int(0.75 * len(label_idx_0)):], label_idx_1[int(0.75 * len(label_idx_1)):])
 
     sens = idx_features_labels[sens_attr].values.astype(int)
+    # statistic(edges, sens)
     sens = torch.LongTensor(sens)
     idx_train = torch.LongTensor(idx_train)
     idx_val = torch.LongTensor(idx_val)
@@ -180,6 +181,7 @@ def load_bail(dataset, sens_attr="WHITE", predict_attr="RECID", path="dataset/ba
     idx_test = np.append(label_idx_0[int(0.75 * len(label_idx_0)):], label_idx_1[int(0.75 * len(label_idx_1)):])
 
     sens = idx_features_labels[sens_attr].values.astype(int)
+    # statistic(edges, sens)
     sens = torch.LongTensor(sens)
     idx_train = torch.LongTensor(idx_train)
     idx_val = torch.LongTensor(idx_val)
@@ -257,6 +259,7 @@ def load_german(dataset, sens_attr="Gender", predict_attr="GoodCustomer", path="
     idx_test = np.append(label_idx_0[int(0.75 * len(label_idx_0)):], label_idx_1[int(0.75 * len(label_idx_1)):])
 
     sens = idx_features_labels[sens_attr].values.astype(int)
+    # statistic(edges, sens)
     sens = torch.LongTensor(sens)
     idx_train = torch.LongTensor(idx_train)
     idx_val = torch.LongTensor(idx_val)
@@ -313,6 +316,7 @@ def load_income(dataset, sens_attr="race", predict_attr="income", path="../datas
     idx_test = np.append(label_idx_0[int(0.75 * len(label_idx_0)):], label_idx_1[int(0.75 * len(label_idx_1)):])
 
     sens = idx_features_labels[sens_attr].values.astype(int)
+    # statistic(edges, sens)
     sens = torch.LongTensor(sens)
     idx_train = torch.LongTensor(idx_train)
     idx_val = torch.LongTensor(idx_val)
@@ -409,6 +413,7 @@ def load_pokec(dataset, sens_attr, predict_attr, path="../dataset/pokec/", label
     idx_test = label_idx[int(0.75 * len(label_idx)):]
 
     sens = idx_features_labels[sens_attr].values
+    # statistic(edges, sens)
 
     sens_idx = set(np.where(sens >= 0)[0])
     idx_test = np.asarray(list(sens_idx & set(idx_test)))
@@ -425,3 +430,150 @@ def load_pokec(dataset, sens_attr, predict_attr, path="../dataset/pokec/", label
     # random.shuffle(sens_idx)
 
     return adj, features, labels, idx_train, idx_val, idx_test, sens, idx_sens_train
+
+
+
+
+
+
+
+
+def statistic(edges, sens):
+    num_nodes = sens.shape[0]
+
+    # _sens = []
+    # for _ in range(num_nodes):
+    #     if random.random() >= 0.5:
+    #         _sens.append(1)
+    #     else:
+    #         _sens.append(0)
+    # sens = _sens
+
+    print("num_nodes:", num_nodes)
+    map_edges = [[0 for _ in range(num_nodes)] for _ in range(num_nodes)]
+    print("Finish initialization")
+    _edges = []
+    for edge in edges:
+        left, right = edge[0], edge[1]
+        if left == right:
+            print("Self_loop...")
+        if map_edges[left][right] == 0 and map_edges[right][left] == 0:
+            map_edges[left][right] = map_edges[right][left] = 1
+            _edges.append([left, right])
+            _edges.append([right, left])
+    edges = _edges
+
+    count_00, count_11, count_01 = 0, 0, 0
+    for edge in edges:
+        left, right = sens[edge[0]], sens[edge[1]]
+        if left == 0 and right == 0:
+            count_00 += 1
+        elif left == 1 and right == 1:
+            count_11 += 1
+        elif (left == 0 and right == 1) or (left == 1 and right == 0):
+            count_01 += 1
+        else:
+            print("ERROR EDGE TYPE!")
+    print("count_00_11:", count_00 + count_11)
+    print("count_01   :", count_01)
+
+    sens_0, sens_1 = 0, 0
+    for sen in sens:
+        if sen == 0:
+            sens_0 += 1
+        elif sen == 1:
+            sens_1 += 1
+        else:
+            print("UNKNOWN SENS.")
+    print("Sens:", sens_0, sens_1, sens_0 / (sens_0 + sens_1))
+
+    edge_tot = count_00 + count_11 + count_01
+    alpha = sens_0 / (sens_0 + sens_1)
+    den_inter_all = count_01 / (edge_tot * alpha * (1 - alpha) * 2)
+    print("Den_inter_all: ", den_inter_all)
+
+    den_inter_intra = count_01 * (alpha * alpha + (1 - alpha) * (1 - alpha)) / ((count_00 + count_11) * alpha * (1 - alpha) * 2)
+    print("Den_inter_intra: ", den_inter_intra)
+
+
+
+
+
+
+# adj, features, labels, idx_train, idx_val, idx_test, sens = load_credit("credit", "Age",
+#                                                                       "NoDefaultNextMonth", path="../dataset/credit",
+#                                                                       label_number=999999
+#                                                                       )
+#
+#
+# adj, features, labels, idx_train, idx_val, idx_test, sens = load_bail("bail", "WHITE",
+#                                                                       "RECID", path="../dataset/bail",
+#                                                                       label_number=999999
+#                                                                       )
+#
+#
+# adj, features, labels, idx_train, idx_val, idx_test, sens = load_german("german", "Gender",
+#                                                                       "GoodCustomer", path="../dataset/german",
+#                                                                       label_number=999999
+#                                                                       )
+
+
+# adj, features, labels, idx_train, idx_val, idx_test, sens = load_income("income", "race",
+#                                                                       "income", path="../dataset/income",
+#                                                                       label_number=999999
+#                                                                       )
+
+
+
+# adj, features, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = load_pokec("region_job", "region",
+#                                                                       "I_am_working_in_field", path="../dataset/pokec/",
+#                                                                       label_number=999999
+#                                                                       )
+#
+#
+# adj, features, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = load_pokec("region_job_2", "region",
+#                                                                       "I_am_working_in_field", path="../dataset/pokec/",
+#                                                                       label_number=999999
+#                                                                       )
+#
+#
+# adj, features, labels, idx_train, idx_val, idx_test, sens, idx_sens_train = load_pokec("nba", "country",
+#                                                                       "SALARY", path="../dataset/NBA",
+#                                                                       label_number=999999
+#                                                                       )
+
+
+
+
+
+
+
+
+
+
+
+
+
+# np.set_printoptions(threshold=np.inf)
+#
+# def graph_partition(A):
+#     deg = np.array(A.sum(axis=0)).flatten()
+#     D = sp.diags(deg)
+#     L = D - A
+#     # print(L)
+#
+#     # eig_val, eig_vec = sp.linalg.eigsh(L, k=2, which='SM', tol=1e-2)
+#
+#     eig_val, eig_vec = np.linalg.eigh(L.todense())
+#     # print(eig_vec.shape)
+#
+#     # print(eig_val)
+#     # print(np.linalg.norm(eig_vec[111]))
+#     # print(np.linalg.norm(eig_vec[5]))
+#     for i in range(eig_val.shape[0]):
+#         if eig_val[i] >= 0.0:
+#             print(np.sort(eig_vec[:, i].squeeze()))
+#             break
+#
+#
+# graph_partition(adj)
