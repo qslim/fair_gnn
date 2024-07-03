@@ -450,6 +450,17 @@ def statistic(edges, sens):
     # sens = _sens
 
     print("num_nodes:", num_nodes)
+
+    sens_0, sens_1 = 0, 0
+    for sen in sens:
+        if sen == 0:
+            sens_0 += 1
+        elif sen == 1:
+            sens_1 += 1
+        else:
+            print("UNKNOWN SENS.")
+    print("sens_0/sens_all: {}/{}={:.4f}".format(sens_0, (sens_0 + sens_1), sens_0 / (sens_0 + sens_1)))
+
     map_edges = [[0 for _ in range(num_nodes)] for _ in range(num_nodes)]
     print("Finish initialization")
     _edges = []
@@ -457,6 +468,7 @@ def statistic(edges, sens):
         left, right = edge[0], edge[1]
         if left == right:
             print("Self_loop...")
+            continue
         if map_edges[left][right] == 0 and map_edges[right][left] == 0:
             map_edges[left][right] = map_edges[right][left] = 1
             _edges.append([left, right])
@@ -474,20 +486,17 @@ def statistic(edges, sens):
             count_01 += 1
         else:
             print("ERROR EDGE TYPE!")
-    print("count_00_11:", count_00 + count_11)
-    print("count_01   :", count_01)
-
-    sens_0, sens_1 = 0, 0
-    for sen in sens:
-        if sen == 0:
-            sens_0 += 1
-        elif sen == 1:
-            sens_1 += 1
-        else:
-            print("UNKNOWN SENS.")
-    print("Sens:", sens_0, sens_1, sens_0 / (sens_0 + sens_1))
+    print("inter/intra: {}/{}={:.4f}".format(count_01, count_00 + count_11, count_01 / (count_00 + count_11)))
+    intra_pair = sens_0 * (sens_0 - 1) + sens_1 * (sens_1 - 1)
+    inter_pair = sens_0 * sens_1 * 2
+    # print("intra_pair:", intra_pair, "inter_pair:", inter_pair)
+    intra_norm, inter_norm = (count_00 + count_11) / intra_pair, count_01 / inter_pair
+    print("inter_n/intra_n: {:.4f}/{:.4f}={:.4f}".format(inter_norm, intra_norm, inter_norm / intra_norm))
 
     edge_tot = count_00 + count_11 + count_01
+    connec_norm = edge_tot / ((sens_0 + sens_1) * (sens_0 + sens_1 - 1))
+    print("inter_n/connec_norm: {:.4f}".format(inter_norm / connec_norm))
+
     alpha = sens_0 / (sens_0 + sens_1)
     den_inter_all = count_01 / (edge_tot * alpha * (1 - alpha) * 2)
     print("Den_inter_all: ", den_inter_all)
@@ -500,10 +509,10 @@ def statistic(edges, sens):
 
 
 
-# adj, features, labels, idx_train, idx_val, idx_test, sens = load_credit("credit", "Age",
-#                                                                       "NoDefaultNextMonth", path="../dataset/credit",
-#                                                                       label_number=999999
-#                                                                       )
+adj, features, labels, idx_train, idx_val, idx_test, sens = load_credit("credit", "Age",
+                                                                      "NoDefaultNextMonth", path="../dataset/credit",
+                                                                      label_number=999999
+                                                                      )
 #
 #
 # adj, features, labels, idx_train, idx_val, idx_test, sens = load_bail("bail", "WHITE",
